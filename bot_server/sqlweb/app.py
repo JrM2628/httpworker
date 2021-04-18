@@ -52,6 +52,7 @@ def bot(id):
 
         return render_template('bot.html', id = id, bot_data = dbmain.bot_tostringlist(conn, id))
 
+
 @app.route('/bot/<id>/proclist', methods=['GET'])
 def proclist(id):
     if 'username' not in session:
@@ -59,6 +60,7 @@ def proclist(id):
     if request.method == 'GET':
         conn = get_db()
         return render_template('botproclist.html', id = id, bot_data = dbmain.bot_pstostring(conn, id))
+
 
 @app.route('/bot/<id>/networkaddresses', methods=['GET'])
 def networkaddresses(id):
@@ -68,6 +70,14 @@ def networkaddresses(id):
         conn = get_db()
         return render_template('botnetworkaddresslist.html', id=id, bot_data=dbmain.bot_nwaddrtostring(conn, id))
 
+
+@app.route('/bot/<id>/commandoutput', methods=['GET'])
+def commandoutput(id):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    if request.method == 'GET':
+        conn = get_db()
+        return render_template('botcommandout.html', id=id, bot_data=dbmain.bot_cmdouttostring(conn, id))
 
 
 @app.route('/uploads', methods=['GET'])

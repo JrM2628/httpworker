@@ -102,6 +102,16 @@ def bot_pstostring(conn:sql.Connection, id):
         return "No network address data"
 
 
+def bot_cmdouttostring(conn: sql.Connection, id):
+    cur = conn.cursor()
+    cur.execute('''SELECT commandout FROM bots WHERE uuid=?''', (id,))
+    data = cur.fetchone()
+    if data:
+        return data[0].split("\n")
+    else:
+        return "No command output available"
+
+
 def update_proclist(conn: sql.Connection, id, procstring):
     cur = conn.cursor()
     cur.execute("UPDATE bots SET processlist = ? WHERE uuid=?", (procstring, id))
@@ -161,6 +171,16 @@ def get_bot_commandqueue(conn: sql.Connection, id):
     cur.execute("SELECT commandqueue FROM bots WHERE uuid=?", (id,))
     return cur.fetchone()
 
+def update_commandout(conn: sql.Connection, id, cmdout):
+    cur = conn.cursor()
+    cur.execute("UPDATE bots SET commandout = ? WHERE uuid=?", (cmdout, id))
+    conn.commit()
+
+
+def get_bot_commandout(conn: sql.Connection, id):
+    cur = conn.cursor()
+    cur.execute("SELECT commandout FROM bots WHERE uuid=?", (id,))
+    return cur.fetchone()
 
 def get_all_bot_ids(conn: sql.Connection):
     cur = conn.cursor()

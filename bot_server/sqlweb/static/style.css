@@ -59,6 +59,15 @@ div {
   background-color: #f2f2f2;
   padding: 10px;
 }
+
+div.cmdback {
+  background-color: black;
+}
+p.cmdfore{
+  color: white;
+  font-family: 'Courier New', monospace;
+}
+
 .container {
   margin: auto;
   border-radius: 5px;

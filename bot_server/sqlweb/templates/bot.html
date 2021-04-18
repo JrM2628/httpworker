@@ -11,7 +11,8 @@ Bot {{ id }}
             <p> {{ data }} </p>
         {% endfor %}
         <a href= {{url_for('proclist', id = id)}}>View Process List</a><br>
-        <a href= {{url_for('networkaddresses', id = id)}}>View Network Address List</a>
+        <a href= {{url_for('networkaddresses', id = id)}}>View Network Address List</a><br>
+        <a href= {{url_for('commandoutput', id = id)}}>View Command Output</a><br>
     </div>
 
     <div>

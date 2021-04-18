@@ -88,9 +88,14 @@ def ps():
             dbmain.update_proclist(conn, request.cookies['X-Session-ID'], proc_string)
         return "ps"
 
+
 @app.route('/upload', methods=['POST'])
 def upload():
-    print("ENTERED")
+    """
+    Endpoint for file uploads
+    Takes file named "file" and writes it to upload directory\sessionid\timestamp_filename
+    :return:
+    """
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files or 'X-Session-ID' not in request.cookies:
@@ -101,7 +106,7 @@ def upload():
             print('No selected file')
             return 'error'
         if file:
-            filename = secure_filename(str(int(time.time())) + file.filename)
+            filename = secure_filename(str(int(time.time())) + "_" + file.filename)
             cookiename = secure_filename(request.cookies['X-Session-ID'])
             dir = app.config['UPLOAD_FOLDER'] + os.sep + cookiename
             if not os.path.exists(dir):
@@ -109,6 +114,23 @@ def upload():
             file.save(os.path.join(dir, filename))
             return 'success'
     return 'maybe'
+
+
+@app.route('/out', methods=['POST'])
+def out():
+    """
+    Endpoint for command output
+    :return:
+    """
+    if request.method == 'POST':
+        if 'X-Session-ID' not in request.cookies:
+            print('No cookie found - cannot update info')
+        else:
+            print(request.cookies['X-Session-ID'])
+            conn = get_db()
+            out_string = request.data.decode()
+            dbmain.update_commandout(conn, request.cookies['X-Session-ID'], out_string)
+        return "out"
 
 
 @app.route('/echo', methods=['POST'])
