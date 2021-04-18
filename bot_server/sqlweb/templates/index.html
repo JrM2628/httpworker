@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Home
+{% endblock %}
+
+{% block content %}
+    <h1>Welcome home</h1>
+    <div>
+    {% if 'username' in session %}
+        <p>Hi, {{ session['username'] }}!</p>
+    {% else %}
+        <p>Create an account or log in</p>
+    {% endif %}
+    </div>
+{% endblock %}
