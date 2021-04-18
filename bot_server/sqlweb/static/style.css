@@ -10,6 +10,12 @@ ul {
 li {
   float: left;
 }
+
+li.diritem {
+    float: left;
+    clear: left;
+}
+
 li a {
   display: block;
   color: white;

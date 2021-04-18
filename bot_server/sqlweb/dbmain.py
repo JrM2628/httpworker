@@ -168,6 +168,17 @@ def get_all_bot_ids(conn: sql.Connection):
     return_val = cur.fetchall()
     return return_val
 
+def get_bot_count(conn: sql.Connection):
+    cur = conn.cursor()
+    cur.execute('SELECT COUNT(uuid) FROM bots')
+    return_val = cur.fetchone()[0]
+    return return_val
+
+def get_user_count(conn: sql.Connection):
+    cur = conn.cursor()
+    cur.execute('SELECT COUNT(username) FROM userdata')
+    return_val = cur.fetchone()[0]
+    return return_val
 
 def hash_my_password(password, salt):
     scrypt_key = hashlib.scrypt(password=password.encode(), salt=salt, n=16384, r=8, p=1)

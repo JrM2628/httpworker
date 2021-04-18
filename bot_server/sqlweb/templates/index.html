@@ -9,6 +9,9 @@ Home
     <div>
     {% if 'username' in session %}
         <p>Hi, {{ session['username'] }}!</p>
+        <p></p>
+        <p>{{ user_count }} users</p>
+        <p>{{ bot_count }} bots</p>
     {% else %}
         <p>Create an account or log in</p>
     {% endif %}

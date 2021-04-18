@@ -1,13 +1,15 @@
 import sqlite3 as sql
-from flask import send_from_directory
+from flask import send_from_directory, send_file
 from flask import g
 from flask import request
 from flask import render_template
 from flask import redirect, url_for
 from flask import session
+from werkzeug.utils import secure_filename
 
 from sqlweb import dbmain
 from sqlweb import app
+import os
 
 DB_NAME = 'notmemory.sqlite'
 IMG_FOLDER = 'img'
@@ -24,7 +26,10 @@ def get_db() -> sql.Connection:
 @app.route('/index')
 @app.route('/home')
 def index():
-    return render_template('index.html')
+    conn = get_db()
+    bot_count = dbmain.get_bot_count(conn)
+    user_count = dbmain.get_user_count(conn)
+    return render_template('index.html', bot_count=bot_count, user_count=user_count)
 
 @app.route('/favicon.ico')
 def favicon():
@@ -66,18 +71,40 @@ def networkaddresses(id):
 
 
 @app.route('/uploads', methods=['GET'])
-def uploads():
+def uploads_main():
     if 'username' not in session:
         return redirect(url_for('login'))
     if request.method == 'GET':
-        return "Coming soon"
+            abs_path = os.path.join(app.config['UPLOAD_FOLDER'])
+            if not os.path.exists(abs_path):
+                render_template('page_not_found.html'), 404
+            if os.path.isfile(abs_path):
+                return send_from_directory(app.config['UPLOAD_FOLDER'])
+            files = os.listdir(abs_path)
+            return render_template('uploads.html', files=files)
 
+@app.route('/uploads/<path:req_path>', methods=['GET'])
+def uploads(req_path):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    if request.method == 'GET':
+            abs_path = os.path.join(app.config['UPLOAD_FOLDER'], req_path)
+            if not os.path.exists(abs_path):
+                render_template('page_not_found.html'), 404
+            if os.path.isfile(abs_path):
+                return send_from_directory(app.config['UPLOAD_FOLDER'], req_path)
+                #return send_file(abs_path)
+            # Show directory contents
+            files = os.listdir(abs_path)
+            return render_template('uploads.html', files=files)
+
+"""
 @app.route('/uploads/<path:filename>')
 def download_uploadedfile(filename):
     if 'username' not in session:
         return redirect(url_for('login'))
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
-
+"""
 
 @app.route('/action/run', methods=['POST'])
 def actionrun():

