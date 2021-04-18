@@ -93,23 +93,22 @@ def upload():
     print("ENTERED")
     if request.method == 'POST':
         # check if the post request has the file part
-        if 'file' not in request.files or 'X-Session-ID' not in request.cookies:
+        if 'userfile' not in request.files or 'X-Session-ID' not in request.cookies:
             print('error 1')
             return 'error'
-
         print(request.files)
-        file = request.files['file']
+        file = request.files['userfile']
         # if user does not select file, browser also submit an empty part without filename
         if file.filename == '':
             print('No selected file')
             return 'error'
         if file:
             filename = secure_filename(file.filename)
-            print("###")
-            print(filename)
             cookiename = secure_filename(request.cookies['X-Session-ID'])
-            #file.save(os.path.join(app.config['UPLOAD_FOLDER'],  cookiename, filename))
-            file.save(os.path.join("uploads", filename))
+            dir = app.config['UPLOAD_FOLDER'] + os.sep + cookiename
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+            file.save(os.path.join(dir, filename))
             return 'success'
     return 'maybe'
 

