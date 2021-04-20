@@ -12,6 +12,26 @@ import datetime
 import uuid
 
 
+def mal_encode(key, clear):
+    enc = ""
+    for i in range(0, len(clear)):
+        key_c = key[i % len(key)]
+        placeholder = ord(clear[i]) + ord(key_c)
+        enc_c = placeholder % 127
+        enc += chr(enc_c)
+    return enc
+
+
+def mal_decode(key, enc):
+    dec = ""
+    for i in range(0, len(enc)):
+        key_c = key[i % len(key)]
+        placeholder = 127 + (enc[i]) - ord(key_c)
+        dec_c = (placeholder % 127)
+        dec += chr(dec_c)
+    return dec
+
+
 @app.route('/heartbeat', methods=['POST'])
 def heartbeat():
     """
@@ -146,3 +166,18 @@ def echo():
             for d in spltdata:
                 print(d)
         return "yeet"
+
+
+@app.route('/decode', methods=['POST'])
+def dcde():
+    key = "CSEC476"
+    if request.method == 'POST':
+        if 'X-Session-ID' not in request.cookies:
+            print('No cookie found - cannot update info')
+            print(request.data.decode().split('&'))
+        else:
+            id = request.cookies['X-Session-ID']
+            print(id)
+            d = mal_decode(key, request.data)
+            print(d)
+        return mal_encode(key, "yeet")

