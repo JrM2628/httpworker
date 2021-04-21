@@ -5,6 +5,7 @@ app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.secret_key = b'csec476malware'
+app.malware_key = "CSEC476"
 
 from sqlweb import auth
 from sqlweb import botmanager

