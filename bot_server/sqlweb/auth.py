@@ -2,7 +2,6 @@ from flask import request
 from flask import render_template
 from flask import redirect, url_for
 from flask import session
-import os
 
 from sqlweb import app
 from sqlweb.app import get_db
@@ -20,7 +19,6 @@ def login():
         return "Incorrect login credentials"
     else:
         return render_template('login.html')
-
 
 
 @app.route('/logout')

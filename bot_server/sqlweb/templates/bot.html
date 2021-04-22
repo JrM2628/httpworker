@@ -56,7 +56,9 @@ Bot {{ id }}
     <div>
         <form action="/action/download" method="POST" id="download">
         <label for="url">URL:</label>
-        <input type="text" id="url" name="url"><br><br>
+        <input type="text" id="url" name="url">
+        <label for="filepath">File Path:</label>
+        <input type="text" id="filepath" name="filepath"><br><br>
         <input type="hidden" name="id" value="{{ id }}">
         </form>
         <button type="submit" form="download" value="Submit">Download</button>

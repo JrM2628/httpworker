@@ -1,5 +1,4 @@
 import os
-import uuid
 import time
 import hashlib
 import sqlite3 as sql

@@ -1,11 +1,10 @@
 import sqlite3 as sql
-from flask import send_from_directory, send_file
+from flask import send_from_directory
 from flask import g
 from flask import request
 from flask import render_template
 from flask import redirect, url_for
 from flask import session
-from werkzeug.utils import secure_filename
 
 from sqlweb import dbmain
 from sqlweb import app
@@ -108,13 +107,6 @@ def uploads(req_path):
             files = os.listdir(abs_path)
             return render_template('uploads.html', files=files)
 
-"""
-@app.route('/uploads/<path:filename>')
-def download_uploadedfile(filename):
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename, as_attachment=True)
-"""
 
 @app.route('/action/run', methods=['POST'])
 def actionrun():
@@ -142,7 +134,7 @@ def actiondownload():
         return redirect(url_for('login'))
     if request.method == 'POST':
         conn = get_db()
-        dbmain.update_commandqueue(conn, request.form['id'], '6 ' + request.form['url'])
+        dbmain.update_commandqueue(conn, request.form['id'], '6 ' + request.form['url'] + ' ' + request.form['filepath'])
         return redirect(url_for('bot', id=request.form['id']))
     return 'Error adding command to database'
 

