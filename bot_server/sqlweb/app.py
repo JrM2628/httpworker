@@ -168,6 +168,18 @@ def actionps():
         return redirect(url_for('bot', id=request.form['id']))
     return 'Error adding command to database'
 
+
+@app.route('/action/ss', methods=['POST'])
+def actionss():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        conn = get_db()
+        dbmain.update_commandqueue(conn, request.form['id'], '8')
+        return redirect(url_for('bot', id=request.form['id']))
+    return 'Error adding command to database'
+
+
 @app.route('/action/clear', methods=['POST'])
 def clearqueue():
     if 'username' not in session:
