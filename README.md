@@ -1,6 +1,7 @@
 # 476final
 A standard HTTP Command and Control server with agents for both Windows and Linux targets.  
 
+Capabilities include: command execution, file upload/download, process list, system information list, screenshot (Windows only), process kill  
 ## Packages
 ### 476test (Windows Client)
 WinInet used for C2 communication. 
@@ -14,5 +15,6 @@ Simple front-end for a cleaner red team experience.
 
 ### linux (Linux Client)
 LibCurl is used for C2 communication. 
+sudo ./a.out > /dev/null 2>&1 &
 
 ZIP Password: infected
