@@ -6,8 +6,8 @@ from flask import render_template
 from flask import redirect, url_for
 from flask import session
 
-from sqlweb import dbmain
-from sqlweb import app
+from c2 import dbmain
+from c2 import app
 import os
 
 DB_NAME = 'notmemory.sqlite'

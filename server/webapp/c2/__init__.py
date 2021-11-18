@@ -15,7 +15,7 @@ app.secret_key = b'csec476malware'
 app.malware_key = "CSEC476"
 app.xor_key = 0x7f
 
-from sqlweb import auth
-from sqlweb import botmanager
-from sqlweb import dbmain
+from c2 import auth
+from c2 import botmanager
+from c2 import dbmain
 dbmain.initdb()

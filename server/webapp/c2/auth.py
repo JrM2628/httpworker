@@ -3,9 +3,9 @@ from flask import render_template
 from flask import redirect, url_for
 from flask import session
 
-from sqlweb import app
-from sqlweb.app import get_db
-from sqlweb import dbmain
+from c2 import app
+from c2.app import get_db
+from c2 import dbmain
 
 
 @app.route('/login', methods=['GET', 'POST'])

