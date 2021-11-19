@@ -4,6 +4,7 @@
 #include "Gdiplus.h"
 #include <vector>
 #include <iostream>
+
 #pragma comment(lib,"gdiplus.lib")
 
 std::vector<BYTE> takeScreenshotAndSaveToMemory();

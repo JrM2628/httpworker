@@ -1,4 +1,5 @@
 #include "core.h"
+
 void mainloop() {
 	Endpoints e;
 	Configuration c;
