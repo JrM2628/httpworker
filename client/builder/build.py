@@ -93,8 +93,8 @@ class configuration:
         self.config["ipcheckurl"] = "http://ifconfig.me/ip"
 
         # times
-        self.config["sleeptime"] = 1 * 1000
-        self.config["cmdtimeout"] = 5 * 10000000
+        self.config["sleeptime"] = 17 * 1000
+        self.config["cmdtimeout"] = 30 * 10000000
 
         # keys
         self.config["key"] = "CSEC476"
