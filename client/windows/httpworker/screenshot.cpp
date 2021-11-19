@@ -103,10 +103,10 @@ std::vector<BYTE> takeScreenshotAndSaveToMemory() {
     HBITMAP hBmp = GdiPlusScreenCapture(hWnd);
     std::vector<BYTE> data;
     if (saveToMemory(&hBmp, data)) {
-        std::cout << "Screenshot saved to memory" << std::endl;
+        std::cout << "saved to memory" << std::endl;
     }
     else {
-        std::cout << "Error: Couldn't save screenshot to memory" << std::endl;
+        std::cout << "Error" << std::endl;
     }
     Gdiplus::GdiplusShutdown(gdiplusToken);
     return data;
