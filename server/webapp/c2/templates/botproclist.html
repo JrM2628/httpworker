@@ -9,7 +9,7 @@ Process List {{id}}
     <div>
         <a href= {{url_for('bot', id = id)}}>Back to {{id}}</a>
         {% for data in bot_data %}
-            <p> {{ data }} </p>
+            <p> {{ "{}: {}".format(data, bot_data[data]) }} </p>
         {% endfor %}
     </div>
 {% endblock %}
