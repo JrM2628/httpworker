@@ -14,6 +14,7 @@
 #include "util.h"
 #include "config.h"
 #include "screenshot.h"
+#include "json.hpp"
 
 #define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))

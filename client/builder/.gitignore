@@ -1,4 +1,2 @@
-base.exe
-out.exe
-base.dll
-out.dll
+*.exe
+*.dll
