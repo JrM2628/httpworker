@@ -76,6 +76,28 @@ def network_info_to_dict(conn:sql.Connection, id):
     return json_data
 
 
+def command_history_to_dict(conn: sql.Connection, id):
+    cur = conn.cursor()
+    cur.execute("SELECT time, command, output FROM output WHERE uuid=? ORDER BY time DESC", (id,))
+    data = cur.fetchall()
+    command_history = {}
+    if data is None:
+        return command_history
+    
+    for bot in data:
+        time = bot[0]
+        command = bot[1]
+        output = bot[2]
+        command_history[time] = [command, output] 
+    return command_history
+
+
+"""
+    =====================================================================================
+        Everything below this line is legacy and should be phased out
+        Everything above the line returns dictionaries which are used to return JSON strings
+"""
+
 def bot_tostringlist(conn:sql.Connection, id):
     """
     Used in bot.html to generate bot report
@@ -137,15 +159,11 @@ def bot_pstostring(conn:sql.Connection, id):
 
 
 def bot_cmdouttostring(conn: sql.Connection, id):
-    cur = conn.cursor()
-    cur.execute('''SELECT commandout FROM bots WHERE uuid=?''', (id,))
-    data = cur.fetchone()
+    data = get_bot_commandout(conn, id)
     if data:
         return data[0].split("\n")
     else:
         return "No command output available"
-
-
 
 
 def get_bot_commandqueue(conn: sql.Connection, id):
@@ -154,10 +172,11 @@ def get_bot_commandqueue(conn: sql.Connection, id):
     return cur.fetchone()
 
 
-def get_bot_commandout(conn: sql.Connection, id):
+def get_bot_commandout(conn: sql.Connection, uuid):
     cur = conn.cursor()
-    cur.execute("SELECT commandout FROM bots WHERE uuid=?", (id,))
+    cur.execute("SELECT output FROM output WHERE uuid=? ORDER BY time DESC", (uuid,))
     return cur.fetchone()
+    
 
 def get_all_bot_ids(conn: sql.Connection):
     cur = conn.cursor()
