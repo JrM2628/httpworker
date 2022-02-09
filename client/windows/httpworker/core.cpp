@@ -17,8 +17,12 @@ std::string sendEncodedString(struct Strings* strings, std::string key, std::str
 			chunk.resize(receivedData);
 			buf += chunk;
 		}
+		HttpEndRequestA(hRequest, NULL, NULL, NULL);
+		InternetCloseHandle(hRequest);
 		return decode(key, buf);
 	}
+	HttpEndRequestA(hRequest, NULL, NULL, NULL);
+	InternetCloseHandle(hRequest);
 	return "Error";
 }
 
@@ -243,6 +247,7 @@ std::string getProcToStr() {
 		buf[UNLEN] = 0;
 		jsonInfo[buf] = str;
 	} while (Process32Next(hTH32, &procEntry));
+	CloseHandle(hTH32);
 	return jsonInfo.dump();
 }
 

