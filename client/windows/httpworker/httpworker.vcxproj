@@ -97,9 +97,11 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='dll|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -148,6 +150,12 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <StripPrivateSymbols>Yes</StripPrivateSymbols>
     </Link>
+    <PostBuildEvent>
+      <Command>signtool sign /v /a /debug /f "C:\Users\shell\Desktop\signingcert.pfx" /p Password123! "$(TargetPath)"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>sign</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -166,6 +174,12 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <StripPrivateSymbols>Yes</StripPrivateSymbols>
     </Link>
+    <PostBuildEvent>
+      <Command>signtool sign /v /a /debug /f "C:\Users\shell\Desktop\signingcert.pfx" /p Password123! "$(TargetPath)"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>sign</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='dll|Win32'">
     <ClCompile>

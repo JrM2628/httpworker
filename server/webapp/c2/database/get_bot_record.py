@@ -88,7 +88,7 @@ def command_history_to_dict(conn: sql.Connection, id):
         time = bot[0]
         command = bot[1]
         output = bot[2]
-        command_history[time] = [command, output] 
+        command_history[time] = {"command":command, "output":output} 
     return command_history
 
 

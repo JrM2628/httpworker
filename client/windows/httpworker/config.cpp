@@ -28,7 +28,6 @@ void initializeConfig(struct Configuration* Config, std::string configStr) {
 	Config->endpoints.ps = j["endpoints"]["ps"];
 	Config->endpoints.upload = j["endpoints"]["upload"];
 
-	
 	//Strings
 	Config->strings.get = j["strings"]["get"];
 	Config->strings.post = j["strings"]["post"];

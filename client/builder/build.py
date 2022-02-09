@@ -86,9 +86,10 @@ class configuration:
 
         # net
         self.config["hostname"] = "127.0.0.1"
-        self.config["hostname"] = "192.168.110.128"
-        self.config["port"] = 5000
-        self.config["protocol"] = "https"
+        self.config["hostname"] = "192.168.15.75"
+        self.config["hostname"] = "nginxworker.3utilities.com"
+        self.config["port"] = 443
+        self.config["protocol"] = "http"
         self.config["useragent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36"
         self.config["ipcheckurl"] = "http://ifconfig.me/ip"
 

