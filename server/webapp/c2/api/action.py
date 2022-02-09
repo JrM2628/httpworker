@@ -144,3 +144,14 @@ def clearqueue():
         update_bot_record.update_commandqueue(conn, request.form['id'], '')
         return redirect(url_for('bot', id=request.form['id']))
     return 'Error adding command to database'
+
+
+@app.route('/action/delete', methods=['POST'])
+def deletebot():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    if request.method == 'POST':
+        conn = get_db()
+        update_bot_record.remove_bot_from_db(conn, request.form['id'])
+        return redirect(url_for('bots'))
+    return 'Error adding command to database'

@@ -57,8 +57,9 @@ def process_list_to_dict(conn:sql.Connection, id):
     cur = conn.cursor()
     cur.execute('''SELECT processlist FROM bots WHERE uuid=?''', (id,))
     data = cur.fetchone()
+    print(data)
     process_list = {}
-    if data is None:
+    if data is None or data[0] is None:
         return process_list
     process_list = json.loads(data[0])
     return process_list
@@ -69,7 +70,7 @@ def network_info_to_dict(conn:sql.Connection, id):
     cur.execute('''SELECT networkaddresses FROM bots WHERE uuid=?''', (id,))
     data = cur.fetchone()
     network_info = {}
-    if data is None:
+    if data is None or data[0] is None:
         return network_info
     
     json_data = data[0]

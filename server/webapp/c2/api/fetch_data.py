@@ -25,7 +25,6 @@ def getIP(format=None):
 def get_bots():
     if 'username' not in session:
         return "Unauthorized", 401
-
     conn = get_db()
     bot_data = dbget.bots_to_dict(conn)
     return bot_data
@@ -35,7 +34,6 @@ def get_bots():
 def get_stats():
     if 'username' not in session:
         return "Unauthorized", 401
-        
     conn = get_db()
     server_stats = dbget.server_stats_to_dict(conn)
     return server_stats
@@ -45,7 +43,6 @@ def get_stats():
 def get_bot(uuid):
     if 'username' not in session:
         return "Unauthorized", 401
-
     conn = get_db()
     bot_data = dbget.bot_to_dict(conn, uuid)
     return bot_data
@@ -76,3 +73,9 @@ def get_command_history(uuid):
     conn = get_db()
     command_history = dbget.command_history_to_dict(conn, uuid)
     return command_history
+
+@app.route('/api/v1/username', methods=['GET'])
+def get_username():
+    if 'username' not in session:
+        return "Unauthorized", 401
+    return {"username": session["username"]}

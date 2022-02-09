@@ -2,6 +2,7 @@ import sqlite3 as sql
 import time
 import json
 
+
 def add_bot_to_db(conn: sql.Connection, id, checkin, ip="", networkaddresses="", username="", devicename=""):
     cur = conn.cursor()
     cur.execute("SELECT checkin FROM bots WHERE uuid=?", (id,))
@@ -15,13 +16,20 @@ def add_bot_to_db(conn: sql.Connection, id, checkin, ip="", networkaddresses="",
         return
 
 
+def remove_bot_from_db(conn:sql.Connection, id):
+    cur = conn.cursor()
+    cur.execute("DELETE FROM output WHERE uuid=?", (id,))
+    cur.execute("DELETE FROM bots WHERE uuid=?", (id,))
+    cur.fetchall()
+    conn.commit()
+
+
 def checkin(conn: sql.Connection, id):
     cur = conn.cursor()
     checkin = int(time.time())
     cur.execute('''UPDATE bots SET checkin=? WHERE uuid=?''', (checkin, id))
     cur.fetchall()
     conn.commit()
-    print("Checkin logged: " + id + " " + str(checkin))
 
 
 def update_proclist(conn: sql.Connection, id, procstring):

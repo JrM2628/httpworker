@@ -23,7 +23,7 @@ def heartbeat():
     """
     Beacon heartbeat endpoint
     Used by the bot to check in and get additional commands
-    If there are no commands to execute, returns "1" (OK/NOP)
+    If there are no commands to execute, returns {"action":"ok"} (OK/NOP)
     Uses X-Session-ID cookie as a bot UUID
 
     :return: command for bot to execute
