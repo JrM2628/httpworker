@@ -188,8 +188,21 @@ def get_all_bot_ids(conn: sql.Connection):
 def get_all_bot_ids_and_networking(conn: sql.Connection):
     cur = conn.cursor()
     cur.execute('SELECT uuid, networkaddresses FROM bots ORDER BY checkin DESC')
-    return_val = cur.fetchall()
-    return return_val
+    bots = cur.fetchall()
+    bots_2 = []
+    for bot in range(len(bots)):
+        out_str = ""
+        net_addr = bots[bot][1]
+        js = json.loads(net_addr)
+        adc = 0
+        for adapter in js:
+            out_str += js[adapter]["ip"]
+            if adc < len(js) - 1:
+                out_str += ", "
+            adc += 1
+        print(out_str)
+        bots_2.append((bots[bot][0], out_str))
+    return bots_2
 
 def get_bot_count(conn: sql.Connection):
     cur = conn.cursor()

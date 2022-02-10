@@ -67,7 +67,12 @@ def networkaddresses(id):
         return redirect(url_for('login'))
     if request.method == 'GET':
         conn = get_db()
-        return render_template('botnetworkaddresslist.html', id=id, bot_data=db.bot_nwaddrtostring(conn, id))
+        data = db.bot_nwaddrtostring(conn, id)
+        ips = []
+        for adapter in data:
+            if 'ip' in data[adapter]:
+                ips.append(data[adapter]['ip'])
+        return render_template('botnetworkaddresslist.html', id=id, bot_data=ips)
 
 
 @app.route('/bot/<id>/commandoutput', methods=['GET'])
