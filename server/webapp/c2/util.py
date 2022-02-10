@@ -1,6 +1,5 @@
 import os
 
-
 def mal_encode(key, clear):
     enc = ""
     for i in range(0, len(clear)):
@@ -45,3 +44,15 @@ def file_decrypt(dir, filename, key):
                 bytes_read = source.read(CHUNKSIZE)
     os.remove(inpath)
     return
+
+
+def pathtodict(path):
+    output = {}
+    with os.scandir(path) as it:
+        output[path] = []
+        for entry in it:
+            if entry.is_dir():
+                output[path].append(pathtodict(path + os.sep + entry.name))
+            elif entry.is_file():
+                output[path].append(entry.name)
+    return output

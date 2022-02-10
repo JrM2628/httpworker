@@ -1,10 +1,11 @@
 from flask import request
 from flask import session
+import os
 
 from c2.app import app
 from c2.app import get_db
 from c2.database import get_bot_record as dbget
-
+from c2.util import pathtodict
 
 @app.route('/api/v1/ip', methods=['GET'])
 @app.route('/api/v1/ip/<format>', methods=['GET'])
@@ -79,3 +80,14 @@ def get_username():
     if 'username' not in session:
         return "Unauthorized", 401
     return {"username": session["username"]}
+
+@app.route('/api/v1/uploads', methods=['GET'])
+def get_uploads():
+    if 'username' not in session:
+        return "Unauthorized", 401
+    abs_path = os.path.join(app.config['UPLOAD_FOLDER'])
+    if not os.path.exists(abs_path):
+        return "not found"
+    else:
+        return pathtodict(abs_path)
+    

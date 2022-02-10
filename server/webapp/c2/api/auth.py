@@ -34,7 +34,7 @@ def signup():
         if auth.add_user(conn, request.form['email'], request.form['username'], request.form['password']):
             return redirect(url_for('login'))
         else:
-            return "Error creating user. Maybe username is taken?"
+            return "Error creating user. Make sure to fill out all details."
     else:
         if session.get("username") is None:
             return render_template('adduser.html')

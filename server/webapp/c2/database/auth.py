@@ -9,6 +9,8 @@ def hash_my_password(password, salt):
 
 
 def add_user(conn: sql.Connection, email, username, password):
+    if email == "" or username == "" or password == "":
+        return False
     cur = conn.cursor()
     salt = os.urandom(16)
     hash = hash_my_password(password, salt)
