@@ -46,7 +46,6 @@ InternetOpenA
 */
 
 // Structure containing string data
-// TODO: make use of this
 struct Strings {
 	std::string post;
 	std::string get;

