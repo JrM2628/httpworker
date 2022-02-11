@@ -7,7 +7,7 @@ def add_bot_to_db(conn: sql.Connection, id, checkin, ip="", networkaddresses="",
     cur = conn.cursor()
     cur.execute("SELECT checkin FROM bots WHERE uuid=?", (id,))
     if len(cur.fetchall()) > 0:
-        print("Bot already exists: " + id)
+        # bot already exists
         return
     else:
         cur.execute("INSERT INTO bots(uuid, checkin, ip, networkaddresses, username, devicename, commandqueue, commandout) VALUES(?, ?, ?, ?, ?, ?, ?, ?)", (id, checkin, ip, networkaddresses, username, devicename, "", ""))

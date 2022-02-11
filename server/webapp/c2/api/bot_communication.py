@@ -47,7 +47,7 @@ def heartbeat():
             return resp
         else:
             id = request.cookies['X-Session-ID']
-            db.add_bot_to_db(conn, id, checkin)
+            db.add_bot_to_db(conn, id, checkin) # just in case
             db.checkin(conn, id)
             dbget.get_bot_info(conn, id)
             command = dbget.get_bot_commandqueue(conn, id)[0]
