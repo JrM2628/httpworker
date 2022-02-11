@@ -193,13 +193,14 @@ def get_all_bot_ids_and_networking(conn: sql.Connection):
     for bot in range(len(bots)):
         out_str = ""
         net_addr = bots[bot][1]
-        js = json.loads(net_addr)
-        adc = 0
-        for adapter in js:
-            out_str += js[adapter]["ip"]
-            if adc < len(js) - 1:
-                out_str += ", "
-            adc += 1
+        if net_addr != "":
+            js = json.loads(net_addr)
+            adc = 0
+            for adapter in js:
+                out_str += js[adapter]["ip"]
+                if adc < len(js) - 1:
+                    out_str += ", "
+                adc += 1
         print(out_str)
         bots_2.append((bots[bot][0], out_str))
     return bots_2
