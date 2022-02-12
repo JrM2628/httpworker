@@ -1,19 +1,40 @@
 {% extends 'base.html' %}
 
 {% block title %}
-Home
+Bots
 {% endblock %}
 
 {% block content %}
-    <h1>Welcome home</h1>
-    <div class="main">
-    {% if 'username' in session %}
-        <p>Hi, {{ session['username'] }}!</p>
-        <p> </p>
-        <p>{{ user_count }} users</p>
-        <p>{{ bot_count }} bots</p>
-    {% else %}
-        <p>Create an account or log in</p>
-    {% endif %}
-    </div>
+<script> $(document).ready(function() { refreshBots(); });</script>
+ <!-- Page content -->      
+ <div id="main" class="main">
+    <div id="bot" class="bot">
+        <h1>Bots</h1>
+        <img class="whiteicon" src="{{url_for('static', filename='icon/refresh-line.svg') }}" onclick="refreshBots()">
+        <br>
+        <br>
+        <div class="grid-container" id="botcontainer">
+            <div class="grid-item">
+                <img class="gridicon" src="{{url_for('static', filename='icon/computer-line.svg') }}" onclick="alert(1)">
+                <p class="gridlabel">ac50265c-80d2-11ec-b0c7-a0afbdf25806</p>
+                <p class="gridlabel">['192.168.1.1']</p>
+                <br>
+                <p class="gridlabel">1644640428</p>
+            </div>
+            <div class="grid-item">
+                <img class="gridicon" src="{{url_for('static', filename='icon/computer-line.svg') }}" onclick="alert(1)">
+                <p class="gridlabel">ac50265c-80d2-11ec-b0c7-a0afbdf25806</p>
+                <p class="gridlabel">['192.168.1.1']</p>
+                <br>
+                <p class="gridlabel">1644640428</p>
+            </div>
+            <div class="grid-item">
+                <img class="gridicon" src="{{url_for('static', filename='icon/computer-line.svg') }}" onclick="alert(1)">
+                <p class="gridlabel">ac50265c-80d2-11ec-b0c7-a0afbdf25806</p>
+                <p class="gridlabel">['192.168.1.1']</p>
+                <br>
+                <p class="gridlabel">1644640428</p>
+            </div>
+        </div>
+</div>
 {% endblock %}

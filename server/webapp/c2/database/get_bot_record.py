@@ -21,7 +21,7 @@ def server_stats_to_dict(conn:sql.Connection):
 
 def bots_to_dict(conn:sql.Connection):
     cur = conn.cursor()
-    cur.execute('''SELECT uuid, checkin FROM bots ORDER BY checkin DESC''')
+    cur.execute('''SELECT uuid, checkin, networkaddresses FROM bots ORDER BY checkin DESC''')
     data = cur.fetchall()
     bots = {}
     if data is None:
@@ -30,7 +30,14 @@ def bots_to_dict(conn:sql.Connection):
     for bot in data:
         uuid = bot[0]
         checkin = bot[1]
-        bots[uuid] = checkin
+        nwaddresses = bot[2]
+        ips = []
+        if nwaddresses != "":
+            nwaddresses = json.loads(nwaddresses)
+            for adapter in nwaddresses:
+                if "ip" in nwaddresses[adapter]:
+                    ips.append(nwaddresses[adapter]["ip"])
+        bots[uuid] = {"checkin": checkin, "ips": ips}
     return bots
 
 
@@ -204,7 +211,7 @@ def get_all_bot_ids_and_networking(conn: sql.Connection):
                 if adc < len(js) - 1:
                     out_str += ", "
                 adc += 1
-        print(out_str)
+        # print(out_str)
         bots_2.append((bots[bot][0], out_str))
     return bots_2
 

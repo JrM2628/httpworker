@@ -42,7 +42,7 @@ def bots():
         return redirect(url_for('login'))
     if request.method == 'GET':
         conn = get_db()
-        return render_template('bots.html', bot_list = db.get_all_bot_ids_and_networking(conn))
+        return render_template('bots.html')
 
 
 @app.route('/bot/<id>', methods=['GET'])
@@ -106,7 +106,7 @@ def uploads(req_path):
     if request.method == 'GET':
             abs_path = os.path.join(app.config['UPLOAD_FOLDER'], req_path)
             if not os.path.exists(abs_path):
-                render_template('404.html'), 404
+                return render_template('404.html'), 404
             if os.path.isfile(abs_path):
                 return send_from_directory(app.config['UPLOAD_FOLDER'], req_path)
                 #return send_file(abs_path)

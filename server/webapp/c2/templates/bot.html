@@ -183,6 +183,13 @@ Bot {{ id }}
                         </span>
                     </a>
                 </div>
+                <div class="bot botaction" id="files">
+                    <a href="#" onclick="window.location.href = '/uploads/' + uuid;" id="filesbutton">
+                        <span>Files
+                            <img class="actionicon" src="{{url_for('static', filename='icon/file-line.svg') }}">
+                        </span>
+                    </a>
+                </div>
                 <div class="bot botaction" id="delete">
                     <a href="#" onclick="deleteBot(uuid)" id="deletebutton">
                         <span>Delete

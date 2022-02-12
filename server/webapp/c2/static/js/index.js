@@ -13,6 +13,41 @@ function LoadBots() {
 	});
 }
 
+function refreshBots(){
+	$.getJSON("/api/v1/bots", function(json){
+		$("#botcontainer").empty()
+		$.each(json, function(i, field){
+			var bot_id = i;
+			var ips = field["ips"];
+			var checkin = Number(field["checkin"]);
+
+			var secondsDifference = (Date.now() - (checkin * 1000)) / 1000;
+			var minutesDifference = Math.floor(secondsDifference / 60);
+			var hoursDifference = Math.floor(minutesDifference / 60)
+			secondsDifference = secondsDifference % 60;
+			var lastSeen = hoursDifference + "h " + minutesDifference + "m " +  String(secondsDifference).slice(0, 4) + "s ago";
+			
+			/*
+			console.log(lastSeen);
+			console.log(bot_id);
+			console.log(checkin);
+			console.log(ips);
+			*/
+
+			newbot = "<div class=\"grid-item\">" +
+			"<img class=\"gridicon\" src=\"static/icon/computer-line.svg\" onclick=\"window.location.href='/bot/" + bot_id + "';\">" + 
+			"<p class=\"gridlabel\">" + bot_id + "</p>" + 
+			"<p class=\"gridlabel\">" + ips + "</p>" + 
+			"<br>" +
+			"<p class=\"gridlabel\">" + lastSeen + "</p>" +
+			"</div>"
+			// console.log(newbot);
+			$("#botcontainer").append(newbot);
+		});
+	});
+}
+
+
 function addEnterListener(textboxId, func) {
 	$(textboxId)[0].addEventListener("keyup", function (event) {
 		if (event.keyCode == 13) {
@@ -118,10 +153,8 @@ function refreshBotInfo(id){
 
 function refreshNetworkData(id){
 	$.getJSON("/api/v1/network/" + id , function(json) {
-		console.log(json)
 		$("#netinfo").empty()
 		$.each(json, function(i, field) {
-			console.log(i);
 			adaptername = i;
 			mac = json[i]["mac"];
 			ip = json[i]["ip"];
@@ -149,11 +182,15 @@ function fetchProcessList(id) {
 	});
 }
 
-
-
 function fetchCommandHistory(id) {
 	$.getJSON("/api/v1/commandhistory/" + id , function(json) {
 		console.log(json);
+	});
+}
+
+function fetchBots() {
+	$.getJSON("/api/v1/bots", function(json) {
+		console.log(json)
 	});
 }
 

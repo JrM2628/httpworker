@@ -153,6 +153,42 @@ body {
 
 /*
 ===================================================
+GRIDDDDD
+===================================================
+*/
+.grid-container {
+  display: grid;
+  grid-gap: 10px 10px;
+  grid-template-columns: auto auto auto;
+  background-color: black;
+}
+.grid-item {
+  background-color: rgba(66, 56, 56, 0.8);
+  border: 2px solid white;
+  color:rgb(255, 255, 255);
+  padding: 10px;
+  font-size: 20px;
+  text-align: center;
+  min-height: 75px;
+}
+.gridicon {
+  filter: invert(1);
+  padding: 0px 0px 0px 0px;
+  min-width: 50px;
+  cursor:pointer;
+}
+.gridicon:hover {
+  filter: invert(0);
+}
+.gridlabel {
+  font-family: monospace;
+  font-size: 1vw;
+  max-height: 100px;
+  height:max-content;
+}
+
+/*
+===================================================
 MODAL
 ===================================================
 */
