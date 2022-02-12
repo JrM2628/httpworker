@@ -86,7 +86,6 @@ def info():
             conn = get_db()
 
             jdata = json.loads(d)
-            print(jdata)
             db.update_ip(conn, id, jdata["publicip"])
             db.update_username(conn, id, jdata["username"])
             db.update_devicename(conn, id, jdata["computername"])

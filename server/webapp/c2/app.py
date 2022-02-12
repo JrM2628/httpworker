@@ -22,6 +22,8 @@ def get_db() -> sql.Connection:
 @app.route('/index')
 @app.route('/home')
 def index():
+    if 'username' not in session:
+        return redirect(url_for('login'))
     conn = get_db()
     bot_count = db.get_bot_count(conn)
     user_count = db.get_user_count(conn)
@@ -30,7 +32,8 @@ def index():
 
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory("static", 'favicon.ico', mimetype='image/png')
+
+    return send_from_directory("static", 'favicon.ico', mimetype='image/svg+xml')
 
 
 @app.route('/bots', methods=['GET'])
@@ -47,9 +50,7 @@ def bot(id):
     if 'username' not in session:
         return redirect(url_for('login'))
     if request.method == 'GET':
-        conn = get_db()
-
-        return render_template('bot.html', id = id, bot_data = db.bot_tostringlist(conn, id))
+        return render_template('bot.html', id = id)
 
 
 @app.route('/bot/<id>/proclist', methods=['GET'])
@@ -91,7 +92,7 @@ def uploads_main():
     if request.method == 'GET':
             abs_path = os.path.join(app.config['UPLOAD_FOLDER'])
             if not os.path.exists(abs_path):
-                render_template('page_not_found.html'), 404
+                render_template('404.html'), 404
             if os.path.isfile(abs_path):
                 return send_from_directory(app.config['UPLOAD_FOLDER'])
             files = os.listdir(abs_path)
@@ -105,7 +106,7 @@ def uploads(req_path):
     if request.method == 'GET':
             abs_path = os.path.join(app.config['UPLOAD_FOLDER'], req_path)
             if not os.path.exists(abs_path):
-                render_template('page_not_found.html'), 404
+                render_template('404.html'), 404
             if os.path.isfile(abs_path):
                 return send_from_directory(app.config['UPLOAD_FOLDER'], req_path)
                 #return send_file(abs_path)
@@ -117,7 +118,7 @@ def uploads(req_path):
 
 @app.errorhandler(404)
 def page_not_found(error):
-    return render_template('page_not_found.html'), 404
+    return render_template('404.html'), 404
 
 
 @app.teardown_appcontext

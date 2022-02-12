@@ -2,9 +2,10 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>Login</title>
+        <title>Create Account</title>
         <link rel="stylesheet" href="static/style/index.css">
         <link rel="stylesheet" href="static/style/login.css">
+        <link rel="icon" href="static/icon/rocket-sharp.svg" type="image/svg+xml">
         <script src="static/js/index.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     </head>
@@ -14,12 +15,13 @@
             <source src="static/video/background.mp4" type="video/mp4">
         </video>
         <div class="main loginmain">
-            <h1>Login</h1>
+            <h1>Register</h1>
             <div class="main loginmain">
-                <form action="/login" method="POST">
-                    <input type="text" id="username" name="username" placeholder="Username or email">
+                <form action="/signup" method="POST">
+                    <input type="text" id="email" name="email" placeholder="Email">
+                    <input type="text" id="username" name="username" placeholder="Username">
                     <input type=password name=password placeholder="Password">
-                    <input type="image" class="loginbutton" src="static/icon/login-box-line.svg" width="24" height="24" value="Submit">
+                    <input type="image" class="loginbutton" src="static/icon/user-add-line.svg" width="24" height="24" value="Submit">
                 </form>
             </div>
         </div>

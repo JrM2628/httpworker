@@ -1,0 +1,287 @@
+.sidenav {
+  height: 100%;
+  width: 200px;
+  position: fixed;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  background-color: rgb(45, 45, 45);
+  overflow-x: hidden;
+  padding-top: 30px;
+  text-align: left;
+  font-family: monospace;
+}
+
+.sidenav h1 {
+  color: #ffffff;
+  font-family: monospace;
+  text-align: left;
+}
+.sidenav footer{
+  position : relative;
+  bottom : 0;
+}
+.sidenav a {
+  padding: 7px 8px 7px 3px;
+  text-decoration: none;
+  text-align: left;
+  font-family: monospace;
+  font-size: 20px;
+  color: #ffffff;
+  background-color: rgb(127, 127, 127);
+  outline: #3498DB;
+  outline-style: solid;
+  display: block;
+  text-transform:uppercase;
+}
+.sidenav a:hover {
+  background-color: rgb(100, 100, 100);
+}
+.jicon {
+  position:absolute;
+  right: 0;
+  padding: -0px 10px 0px 0px;
+}
+.whiteicon {
+  filter: invert(1);
+  position:absolute;
+  right: 0;
+  padding: -0px 10px 0px 0px;
+  cursor:pointer;
+}
+.whiteicon:hover{
+  filter: invert(0);
+}
+
+body {
+  background-color: rgb(37, 37, 37);
+}
+
+.main {
+  margin-left: 215px; /* Same as the width of the sidenav */
+  font-size: 28px; /* Increased text to enable scrolling */
+  padding: 0px 15px;
+  background-color: rgb(25, 25, 25);
+  color: white;
+}
+
+.bot {
+  background-color: rgb(25, 25, 25);
+  color: white;
+  font-family: monospace;
+  font-size:16px;
+  text-align: left;
+  text-indent: 5px;
+  padding:0px 0px;
+}
+.bot h1{
+  color: white;
+  font-family: monospace;
+  font-size: 24;
+  max-height: 10px;
+  text-align: left;
+  text-transform: uppercase;
+  text-indent: 0px;
+}
+.bot p {
+  max-height: 5px;
+  padding:0px 0px;
+  text-indent: 5px;
+  /*margin: 15px;*/
+  margin-top:15px;
+  margin-bottom:12px;
+}
+.botinfo {
+  display: flex; flex-wrap: wrap;
+}
+.netinfo p {
+  text-indent: 30px;
+}
+.botaction{
+  display:inline;
+  padding: 5px 0px 10px 10px;
+}
+.actionicon {
+  position:relative;
+  top: 8px;
+  padding: 0px 0px 0px 0px;
+}
+.botaction a {
+  padding: 5px 6px 5px 2px;
+  text-decoration: none;
+  text-align: left;
+  font-family: monospace;
+  font-size: 12px;
+  color: #ffffff;
+  background-color: rgb(127, 127, 127);
+  outline: #3498DB;
+  outline-style: solid;
+  display:flexbox;
+  text-transform:uppercase;
+}
+.botaction a:hover{
+  background-color: rgb(100, 100, 100);
+}
+
+.shellouter {
+  padding:1px;
+}
+.shell {
+  padding:1px;
+  background-color: black;
+  font-family: 'Courier New',monospace;
+  color:white;
+  max-height: 200px;
+  overflow: scroll;
+}
+.shell input{
+  background-color: black;
+  color:white;
+  max-width: 90%;
+}
+.shell span {
+  background-color: white;
+  color: white;
+}
+.shell img{
+  max-width: 10%;
+  position: relative;
+  cursor:pointer;
+  padding:0px;
+  border: none;
+}
+
+/*
+===================================================
+MODAL
+===================================================
+*/
+/* The Modal (background) */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed; /* Stay in place */
+  z-index: 1; /* Sit on top */
+  padding-top: 100px; /* Location of the box */
+  left: 0;
+  top: 0;
+  width: 100%; /* Full width */
+  height: 100%; /* Full height */
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgb(0,0,0); /* Fallback color */
+  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+/* Modal Content */
+.modal-content {
+  background-color: #fefefe;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%;
+  color:black;
+  font-family: monospace;
+}
+
+/* The Close Button */
+.close {
+  color: #aaaaaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+
+/*
+===================================================
+OLD
+===================================================
+*/
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #333;
+  top: 0;
+  width: 100%;
+}
+
+li.diritem {
+    float: left;
+    clear: left;
+}
+
+li a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  font-family: monospace;
+  font-size: 18px;
+  text-decoration: none;
+}
+li a:hover:not(.active) {
+  background-color: #111;
+}
+.active {
+  background-color: #4CAF50;
+}
+
+input[type=text], [type=password], select {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+input[type=submit], input[type=button] {
+  width: 100%;
+  background-color: #3498DB ;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  resize: vertical;
+}
+input[type=submit]:hover, input[type=button]:hover {
+  background-color: #2874A6;
+}
+div {
+  border-radius: 5px;
+  background-color: #f2f2f2;
+  padding: 10px;
+}
+
+.container {
+  margin: auto;
+  border-radius: 5px;
+  background-color: #f2f2f2;
+  padding: 10px;
+  width: 50%;
+}
+h1 {
+  text-align: center;
+  font-family: Monaco, monospace;
+  word-spacing: 2px;
+}
+
+.btn-group .button {
+  border: none;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  float: left;
+}

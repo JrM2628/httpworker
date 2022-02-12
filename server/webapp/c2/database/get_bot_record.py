@@ -44,7 +44,10 @@ def bot_to_dict(conn:sql.Connection, id):
     bot["uuid"] = data[0]
     bot["checkin"] = data[1]
     bot["public_ip"] = data[2]
-    bot["os"] = json.loads(data[8])
+    if(data[8]):
+        bot["os"] = json.loads(data[8])
+    else:
+        bot["os"] = {}
     bot["username"] = data[3]
     bot["devicename"] = data[4]
     bot["region"] = data[5]

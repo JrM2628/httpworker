@@ -37,6 +37,6 @@ def signup():
             return "Error creating user. Make sure to fill out all details."
     else:
         if session.get("username") is None:
-            return render_template('adduser.html')
+            return render_template('signup.html')
         else:
             return redirect(url_for('index'))

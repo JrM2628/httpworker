@@ -3,21 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <title>{%block title%} {%endblock%}</title>
-    <link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{url_for('static', filename='style/index.css') }}">
+    <link rel="stylesheet" href="{{url_for('static', filename='style/login.css') }}">
+    <link rel="icon" href="{{url_for('static', filename='icon/rocket-sharp.svg') }}" type="image/svg+xml">
+    <script src="{{url_for('static', filename='js/index.js') }}"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
-    <ul>
-      <li><a class="active" href="{{ url_for('index') }}">Home</a></li>
     {% if 'username' in session %}
-        <li><a href="{{ url_for('bots') }}">Bot List</a></li>
-        <li><a href="{{ url_for('uploads_main') }}">Uploads</a></li>
-        <li><a href="{{ url_for('logout') }}">Log Out</a></li>
+    <!-- Side navigation -->
+    <div class="sidenav">
+        <h1>
+            JAKE_BOT
+        </h1>
+
+        <a href="{{ url_for('index') }}">
+            <span>Dashboard
+                <img class="jicon" src="{{url_for('static', filename='icon/home-line.svg') }}">
+            </span>
+        </a>
+        <a href="{{ url_for('bots') }}">
+            <span>Bots
+                <img class="jicon" src="{{url_for('static', filename='icon/computer-line.svg') }}">
+            </span>
+        </a>
+        <a href="{{ url_for('uploads_main') }}">
+            <span>Uploads
+                <img class="jicon" src="{{url_for('static', filename='icon/file-line.svg') }}">
+            </span>
+        </a>
+        <a href="#">
+            <span>Build
+                <img class="jicon" src="{{url_for('static', filename='icon/tools-fill.svg') }}">
+            </span>
+        </a>
+        <a href="#">
+            <span>Settings
+                <img class="jicon" src="{{url_for('static', filename='icon/settings-5-fill.svg') }}">
+            </span>
+        </a>    
+        <a href="{{ url_for('logout') }}">
+            <span>Logout
+                <img class="jicon" src="{{url_for('static', filename='icon/logout-box-line.svg') }}">
+            </span>
+        </a>  
+    </div>
     {% else %}
-        <li><a href="{{ url_for('login') }}">Log In</a></li>
-        <li><a href="{{ url_for('signup') }}">Sign Up</a></li>
-    {% endif %}
-    </ul><br>
+        <p>login</p>
+    {% endif %} 
 
     {% block content %}{% endblock %}
 </body>

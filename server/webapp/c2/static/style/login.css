@@ -1,0 +1,41 @@
+.background {
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: -1;
+  }
+  .loginmain {
+    margin-left: 0px; /* Same as the width of the sidenav */
+    padding: 30px 30px;
+    margin: auto;
+    opacity: .8;
+    height: 100%;
+    width: 250px;
+    position:relative;
+    top: 0;
+    left: 0;
+    overflow-x: hidden;
+    font-family: monospace;
+  }
+.loginbutton {
+    filter: invert(1);
+    cursor:pointer;
+    max-width: 30px;
+    margin-left: auto; 
+    margin-right: 0;
+    padding-left: 165px;
+}
+
+.loginmain form {
+    max-width: 50px;
+    font-family: monospace;
+}
+  .loginmain input {
+    width: 200px;
+    margin: auto;
+  }
