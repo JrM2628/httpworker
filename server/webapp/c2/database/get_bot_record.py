@@ -41,6 +41,21 @@ def bots_to_dict(conn:sql.Connection):
     return bots
 
 
+def bot_ips(conn:sql.Connection, id):
+    cur.execute('''SELECT networkaddresses FROM bots''')
+    data = cur.fetchone()
+    if data is None:
+        return []
+    nwaddresses = data[0]
+    ips = []
+    if nwaddresses != "":
+        nwaddresses = json.loads(nwaddresses)
+        for adapter in nwaddresses:
+            if "ip" in nwaddresses[adapter]:
+                ips.append(nwaddresses[adapter]["ip"])
+    return ips
+
+
 def bot_to_dict(conn:sql.Connection, id):
     cur = conn.cursor()
     cur.execute('''SELECT uuid, checkin, ip, username, devicename, region, memory, commandqueue, os FROM bots WHERE uuid=?''', (id,))
