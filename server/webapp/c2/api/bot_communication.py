@@ -58,7 +58,7 @@ def heartbeat():
             """
                 This part below updates pwnboard to reflect the beacon
             """
-            nwaddrstring = dbget.bot_ids(conn, id)
+            nwaddrstring = dbget.bot_ips(conn, id)
             if nwaddrstring != None and nwaddrstring != []:
                 ips = re.findall(r"10.\d{1,3}\.\d{1,3}\.\d{1,3}", str(nwaddrstring))
                 if len(ips) > 0:

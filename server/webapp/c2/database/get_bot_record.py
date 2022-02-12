@@ -42,6 +42,7 @@ def bots_to_dict(conn:sql.Connection):
 
 
 def bot_ips(conn:sql.Connection, id):
+    cur = conn.cursor()
     cur.execute('''SELECT networkaddresses FROM bots''')
     data = cur.fetchone()
     if data is None:
