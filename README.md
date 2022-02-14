@@ -13,10 +13,10 @@ HTTPWorker is a Flask-based HTTP(S) command and control framework with custom Wi
 
 ### Server Capabilities
 In addition to coordinating implant communication, the Flask webapp provides a simple and easy to use web interface for interacting with connected bots. 
-![](docs/img/bot.png)
-![](docs/img/bots.png)
+![](docs/img/bot.PNG)
+![](docs/img/bots.PNG)
 The panel is locked behind an authentication page with user accounts. Passwords are hashed using scrypt.
-![](docs/img/login.png)
+![](docs/img/login.PNG)
 
 # Setup
 ## Server
