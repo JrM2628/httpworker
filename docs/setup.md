@@ -1,7 +1,0 @@
-# Setup
-
-## Server
-### Prerequisites
-
-
-## Client

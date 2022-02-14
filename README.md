@@ -14,7 +14,10 @@ HTTPWorker is a Flask-based HTTP(S) command and control framework with custom Wi
 ### Server Capabilities
 In addition to coordinating implant communication, the Flask webapp provides a simple and easy to use web interface for interacting with connected bots. 
 ![](docs/img/bot.PNG)
+
+The "Bots" page shows the full list of clients which have called back to the C2 - UUID, IP addresses, and the time of last checkin.  
 ![](docs/img/bots.PNG)
+
 The panel is locked behind an authentication page with user accounts. Passwords are hashed using scrypt.
 ![](docs/img/login.PNG)
 
@@ -25,13 +28,23 @@ The panel is locked behind an authentication page with user accounts. Passwords 
 - docker-compose
 
 #### Quick Install
+Clone repo
 ```
 git clone https://github.com/JrM2628/httpworker.git
+```
+Go to server directory
+```
 cd httpworker/server
+```
+Start server
+```
 sudo docker-compose up
-
+```
+Create account
+```
 From browser: https://[C2 IP Address]:5000/signup
 ```
+
 #### Containers
 There are two containers in this C2 setup.
 ##### proxy
@@ -47,7 +60,7 @@ There are two containers in this C2 setup.
     + This is because /signup endpoint is accessible via this server, allowing anyone to create a red team account    
 
 #### Pwnboard
- [Pwnboard](https://github.com/micahjmartin/pwnboard) is used by RIT red teams in security competitions and engagements to track beacons in one consolidated place. 
+ [Pwnboard](https://github.com/micahjmartin/pwnboard) is used by RIT red teams in security competitions and engagements to track beacons in one consolidated place. To enable Pwnboard integration: 
 1. Set app.pwnboard_enabled to "true" in __ init__.py
 2. Set app.pwnboard_host to the hostname of the pwnboard (no scheme or URL endpoint) in __ init__.py
 3. Verify IP regex in heartbeat function (bot_communication.py) is set correctly. Defaults to 10.0.0.0/8 
