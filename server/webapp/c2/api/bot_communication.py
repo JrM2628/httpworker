@@ -63,9 +63,9 @@ def heartbeat():
                 nwaddrstring = dbget.bot_ips(conn, id)
                 print(nwaddrstring)
                 if nwaddrstring != None and nwaddrstring != []:
-                    ips = re.findall(r"192.\d{1,3}\.\d{1,3}\.\d{1,3}", str(nwaddrstring))
+                    ips = re.findall(r"10.\d{1,3}\.\d{1,3}\.\d{1,3}", str(nwaddrstring))
                     if len(ips) > 0:
-                        send_update(ips[0], "")
+                        send_update(ips[0], app.pwnboard_host)
         action = {}
         action['action'] = Verb.ok.value
         return mal_encode(app.malware_key, json.dumps(action))

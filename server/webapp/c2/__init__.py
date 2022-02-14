@@ -18,6 +18,7 @@ app.malware_key = "CSEC476"
 app.xor_key = 0x7f
 app.info_on_first_checkin = True
 app.pwnboard_enabled = False
+app.pwnboard_host = "pwnboard"
 
 from c2.api import auth
 from c2.api import bot_communication
