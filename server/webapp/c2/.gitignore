@@ -4,3 +4,5 @@ database/__pycache__
 uploads/*
 *.sqlite
 *.pyc
+*.exe
+*.dll

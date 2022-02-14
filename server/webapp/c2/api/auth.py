@@ -16,7 +16,7 @@ def login():
         if auth_status:
             session['username'] = user_name
             return redirect(url_for('index'))
-        return "Incorrect login credentials"
+        return redirect(url_for('login'))
     else:
         return render_template('login.html')
 
