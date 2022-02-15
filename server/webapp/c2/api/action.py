@@ -141,7 +141,7 @@ def clearqueue():
         return redirect(url_for('login'))
     if request.method == 'POST':
         conn = get_db()
-        update_bot_record.update_commandqueue(conn, request.form['id'], '')
+        update_bot_record.clear_commandqueue(conn, request.form['id'])
         return redirect(url_for('bot', id=request.form['id']))
     return 'Error adding command to database'
 

@@ -38,6 +38,13 @@ def initdb() -> sql.Connection:
         output TEXT,
         PRIMARY KEY("uuid","time"),
         FOREIGN KEY("uuid") REFERENCES "bots"("uuid"));''')
+    
+    cur.execute('''CREATE TABLE IF NOT EXISTS commandqueue (
+        uuid TEXT NOT NULL,
+        time INTEGER NOT NULL,
+        command TEXT,
+        PRIMARY KEY("uuid","time"),
+        FOREIGN KEY("uuid") REFERENCES "bots"("uuid"));''')
 
     conn.commit()
     return conn

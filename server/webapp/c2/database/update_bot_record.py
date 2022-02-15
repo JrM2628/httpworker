@@ -82,7 +82,14 @@ def update_memory(conn: sql.Connection, id, memory):
 
 def update_commandqueue(conn: sql.Connection, id, cmd):
     cur = conn.cursor()
-    cur.execute("UPDATE bots SET commandqueue = ? WHERE uuid=?", (cmd, id))
+    checkin = int(time.time())
+    cur.execute("INSERT INTO commandqueue (uuid, time, command) VALUES (?, ?, ?)", (id, checkin, cmd))
+    conn.commit()
+
+
+def clear_commandqueue(conn: sql.Connection, id):
+    cur = conn.cursor()
+    cur.execute("DELETE FROM commandqueue WHERE uuid=?", (id,))
     conn.commit()
 
 
