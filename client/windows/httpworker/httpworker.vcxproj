@@ -152,10 +152,12 @@
       <StripPrivateSymbols>Yes</StripPrivateSymbols>
     </Link>
     <PostBuildEvent>
-      <Command>signtool sign /v /a /debug /f "C:\Users\shell\Desktop\signingcert.pfx" /p Password123! "$(TargetPath)"</Command>
+      <Command>
+</Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>sign</Message>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -177,10 +179,12 @@
       <StripPrivateSymbols>Yes</StripPrivateSymbols>
     </Link>
     <PostBuildEvent>
-      <Command>signtool sign /v /a /debug /f "C:\Users\shell\Desktop\signingcert.pfx" /p Password123! "$(TargetPath)"</Command>
+      <Command>
+</Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>sign</Message>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='dll|Win32'">
