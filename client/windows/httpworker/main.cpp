@@ -4,9 +4,11 @@
 #include "mainloop.h"
 
 
-// Main is used for debug (prints output to stdout)
-//int main(){
-// WinMain is used for release (no gui)
-int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+#ifdef _DEBUG // DEBUG
+int main()
+#else // RELEASE
+int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) 
+#endif 
+{
 	mainloop();
 }

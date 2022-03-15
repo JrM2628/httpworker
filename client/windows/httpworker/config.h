@@ -2,6 +2,7 @@
 #include <iostream>
 
 static const int CONFIG_SIZE = 2000;
+static const int KEY_SIZE = 4;
 static unsigned char CONFIG_BUFFER[CONFIG_SIZE] = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"; // This can be anything, but it should be unique so the builder can find and replace it with the config file
 
 // Structure containing API endpoints. 

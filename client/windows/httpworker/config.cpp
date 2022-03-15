@@ -2,14 +2,13 @@
 #include "config.h"
 #include "json.hpp"
 
-
 std::string xorConfig(char* encString) {
 	std::string decString = "";
 	// Key values are bytes 0-3
 	// XORing the bytes with i % 4 decodes the data
 	// Multibyte XOR
-	for (int i = 4; i < CONFIG_SIZE; i++) {
-		decString += (encString[i] ^ ((int)encString[i % 4]));
+	for (int i = KEY_SIZE; i < CONFIG_SIZE; i++) {
+		decString += (encString[i] ^ ((int)encString[i % KEY_SIZE]));
 	}
 	return decString;
 }
