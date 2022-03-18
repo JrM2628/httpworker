@@ -161,20 +161,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\httpworker\config.h" />
-    <ClInclude Include="..\httpworker\core.h" />
-    <ClInclude Include="..\httpworker\json.hpp" />
-    <ClInclude Include="..\httpworker\mainloop.h" />
-    <ClInclude Include="..\httpworker\screenshot.h" />
-    <ClInclude Include="..\httpworker\util.h" />
+    <ClInclude Include="..\common\config.h" />
+    <ClInclude Include="..\common\core.h" />
+    <ClInclude Include="..\common\json.hpp" />
+    <ClInclude Include="..\commonmainloop.h" />
+    <ClInclude Include="..\common\screenshot.h" />
+    <ClInclude Include="..\common\util.h" />
     <ClInclude Include="framework.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\httpworker\config.cpp" />
-    <ClCompile Include="..\httpworker\core.cpp" />
-    <ClCompile Include="..\httpworker\mainloop.cpp" />
-    <ClCompile Include="..\httpworker\screenshot.cpp" />
-    <ClCompile Include="..\httpworker\util.cpp" />
+    <ClCompile Include="..\common\config.cpp" />
+    <ClCompile Include="..\common\core.cpp" />
+    <ClCompile Include="..\common\mainloop.cpp" />
+    <ClCompile Include="..\common\screenshot.cpp" />
+    <ClCompile Include="..\common\util.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

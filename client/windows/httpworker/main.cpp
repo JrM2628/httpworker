@@ -1,7 +1,7 @@
-#include "config.h"
-#include "util.h"
-#include "core.h"
-#include "mainloop.h"
+#include "..\common\config.h"
+#include "..\common\util.h"
+#include "..\common\core.h"
+#include "..\common\mainloop.h"
 
 
 #ifdef _DEBUG // DEBUG

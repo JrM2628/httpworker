@@ -1,0 +1,2 @@
+# Linux Implant
+This part of the framework needs improvement and may be removed soon. It was written as a one-time PoC and has not been updated to maintain compatibility with the C2 at this time. This code is still here in case this is revived in the future.  

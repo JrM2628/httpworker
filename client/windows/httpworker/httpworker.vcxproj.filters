@@ -15,19 +15,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="screenshot.cpp">
+    <ClCompile Include="..\common\screenshot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="config.cpp">
+    <ClCompile Include="..\common\config.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="util.cpp">
+    <ClCompile Include="..\common\util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="core.cpp">
+    <ClCompile Include="..\common\core.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="mainloop.cpp">
+    <ClCompile Include="..\common\mainloop.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
@@ -38,19 +38,19 @@
     <ClInclude Include="screenshot.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="json.hpp">
+    <ClInclude Include="..\common\json.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="config.h">
+    <ClInclude Include="..\common\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="util.h">
+    <ClInclude Include="..\common\util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="core.h">
+    <ClInclude Include="..\common\core.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="mainloop.h">
+    <ClInclude Include="..\common\mainloop.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
