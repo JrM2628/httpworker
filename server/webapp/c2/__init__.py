@@ -13,6 +13,7 @@ app.config['ENDPOINTS']['OUT'] = '/msdownload/update/v3/static/untrusted/en/trus
 app.config['ENDPOINTS']['UPLOAD'] = '/msdownload/update/v3/static/untrustedr/en/authroot.cab'
 
 app.config['DB_NAME'] = "db.sqlite"
+app.config['COOKIE_NAME'] = "X-Session-ID" 
 app.secret_key = b'csec476malware'
 app.malware_key = "CSEC476"
 app.xor_key = 0x7f

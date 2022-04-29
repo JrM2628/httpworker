@@ -8,7 +8,7 @@ Home
     <script> $(document).ready(function() { startClock(); setInterval(startClock,1000); });</script>
     <div class="main">
     <h1>Welcome</h1>
-    <p id="clock">Fri Feb 11 2022 21:22:49 GMT-0500 (Eastern Standard Time)</p>
+    <p id="clock"></p>
     {% if 'username' in session %}
         <p>Hi, {{ session['username'] }}!</p>
         <p> </p>
